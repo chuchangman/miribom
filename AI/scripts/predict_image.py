@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-가전 이미지 분류 추론 스크립트 (독립 실행형)
+가전 이미지 분류 추론 스크립트 (독립 실행형 CLI)
 
 사용법:
   python scripts/predict_image.py --image path/to/image.jpg
   python scripts/predict_image.py --image path/to/image.jpg --json
-  python scripts/predict_image.py --image path/to/image.jpg --checkpoint checkpoints/other.pth
+  python scripts/predict_image.py --image path/to/image.jpg --cpu
 """
 
 import argparse
@@ -13,86 +13,17 @@ import json
 import sys
 from pathlib import Path
 
-# AI/ 를 프로젝트 루트로 설정 (scripts/ 한 단계 위)
+# AI/ 를 프로젝트 루트로 설정
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
 import config
+from core.predictor import AppliancePredictor, SUPPORTED_EXTENSIONS
 
-import torch
-import torch.nn as nn
-from torchvision import transforms
-from torchvision.models import efficientnet_v2_s
-from PIL import Image as PILImage
-
-# 기본 체크포인트 경로
 DEFAULT_CKPT = PROJECT_ROOT / config.CHECKPOINTS_DIR / 'phase2_service_best_model.pth'
 
-# valid/test 와 동일한 전처리 (augmentation 없음)
-TRANSFORM = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-])
 
-
-def load_model(ckpt_path: Path, device: torch.device):
-    if not ckpt_path.exists():
-        print(f'\n[오류] 모델 파일을 찾을 수 없습니다.')
-        print(f'  경로: {ckpt_path}')
-        print(f'  → AI/checkpoints/ 폴더에 phase2_service_best_model.pth 가 있는지 확인해주세요.')
-        print(f'  → 학습이 완료된 체크포인트 파일이 필요합니다.')
-        sys.exit(1)
-
-    ckpt        = torch.load(ckpt_path, map_location=device, weights_only=False)
-    classes     = ckpt['classes']          # 체크포인트 내부 클래스 순서 사용
-    num_classes = len(classes)
-
-    model = efficientnet_v2_s(weights=None)
-    model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
-    model.load_state_dict(ckpt['model_state_dict'])
-    model = model.to(device)
-    model.eval()
-
-    return model, classes, ckpt
-
-
-def predict(image_path: str, model, classes, device):
-    path = Path(image_path)
-    if not path.exists():
-        print(f'\n[오류] 이미지 파일을 찾을 수 없습니다: {path}')
-        sys.exit(1)
-    if path.suffix.lower() not in ('.jpg', '.jpeg', '.png', '.bmp', '.webp'):
-        print(f'\n[오류] 지원하지 않는 파일 형식입니다: {path.suffix}')
-        print('  → .jpg .jpeg .png .bmp .webp 형식만 지원합니다.')
-        sys.exit(1)
-
-    try:
-        img = PILImage.open(path).convert('RGB')
-    except Exception as e:
-        print(f'\n[오류] 이미지를 열 수 없습니다: {e}')
-        sys.exit(1)
-
-    tensor = TRANSFORM(img).unsqueeze(0).to(device)
-    with torch.no_grad():
-        probs = torch.softmax(model(tensor), dim=1)[0]
-
-    top_k = min(3, len(classes))
-    top_probs, top_idx = probs.topk(top_k)
-
-    results = []
-    for prob, idx in zip(top_probs.tolist(), top_idx.tolist()):
-        fine = classes[idx]
-        svc  = config.SERVICE_LABEL_MAP[fine]
-        results.append({
-            'fine_label':    fine,
-            'service_label': svc,
-            'confidence':    round(prob, 6),
-        })
-
-    return results
-
-
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='가전 이미지 분류 추론 — EfficientNetV2-S Phase 2',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -100,39 +31,64 @@ def main():
 예시:
   python scripts/predict_image.py --image data/external_test/refrigerator/ext_0000.jpg
   python scripts/predict_image.py --image photo.jpg --json
-  python scripts/predict_image.py --image photo.jpg --checkpoint checkpoints/other.pth
+  python scripts/predict_image.py --image photo.jpg --cpu
         ''',
     )
-    parser.add_argument('--image',      required=True,          help='추론할 이미지 파일 경로')
-    parser.add_argument('--checkpoint', default=str(DEFAULT_CKPT), help='체크포인트 경로 (기본: phase2_service_best_model.pth)')
-    parser.add_argument('--json',       action='store_true',    help='JSON 형식으로 출력')
-    parser.add_argument('--cpu',        action='store_true',    help='GPU 무시하고 CPU 강제 사용')
+    parser.add_argument('--image',      required=True,              help='추론할 이미지 파일 경로')
+    parser.add_argument('--checkpoint', default=str(DEFAULT_CKPT),  help='체크포인트 경로')
+    parser.add_argument('--json',       action='store_true',        help='JSON 형식으로 출력')
+    parser.add_argument('--cpu',        action='store_true',        help='CPU 강제 사용')
     args = parser.parse_args()
 
-    device    = torch.device('cpu') if args.cpu else \
-                torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    ckpt_path = Path(args.checkpoint)
+    import torch
+    device = torch.device('cpu') if args.cpu else \
+             torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model, classes, ckpt = load_model(ckpt_path, device)
-    results               = predict(args.image, model, classes, device)
-    best                  = results[0]
+    # 모델 로드
+    try:
+        predictor = AppliancePredictor(
+            ckpt_path=args.checkpoint,
+            service_label_map=config.SERVICE_LABEL_MAP,
+            device=device,
+        )
+    except FileNotFoundError as e:
+        print(f'\n[오류] {e}')
+        sys.exit(1)
+
+    # 이미지 유효성 검사
+    path = Path(args.image)
+    if not path.exists():
+        print(f'\n[오류] 이미지 파일이 없습니다: {path}')
+        sys.exit(1)
+    if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+        print(f'\n[오류] 지원하지 않는 형식: {path.suffix}')
+        print(f'  → 지원 형식: {", ".join(sorted(SUPPORTED_EXTENSIONS))}')
+        sys.exit(1)
+
+    from PIL import Image as PILImage
+    try:
+        image = PILImage.open(path)
+    except Exception as e:
+        print(f'\n[오류] 이미지를 열 수 없습니다: {e}')
+        sys.exit(1)
+
+    results = predictor.predict(image, top_k=3)
+    best    = results[0]
 
     if args.json:
-        output = {
-            'image':      str(args.image),
-            'device':     str(device),
-            'checkpoint': ckpt_path.name,
-            'prediction': best,
-            'top3':       results,
-        }
-        print(json.dumps(output, ensure_ascii=False, indent=2))
+        print(json.dumps(
+            {'image': str(args.image), **predictor.meta,
+             'prediction': best, 'top3': results},
+            ensure_ascii=False, indent=2,
+        ))
     else:
         sep = '─' * 44
+        m   = predictor.meta
         print(sep)
-        print(f'  체크포인트 : {ckpt_path.name}')
-        print(f'  phase/epoch: {ckpt["phase"]} / epoch {ckpt["epoch"]}')
-        print(f'  classes    : {classes}')
-        print(f'  device     : {device}')
+        print(f'  체크포인트 : {m["checkpoint"]}')
+        print(f'  phase/epoch: {m["phase"]} / epoch {m["epoch"]}')
+        print(f'  classes    : {m["classes"]}')
+        print(f'  device     : {m["device"]}')
         print(sep)
         print(f'  이미지     : {args.image}')
         print(sep)
@@ -143,7 +99,7 @@ def main():
         print('  Top-3 예측:')
         for rank, r in enumerate(results, 1):
             bar = '█' * int(r['confidence'] * 30)
-            print(f'    {rank}. {r["fine_label"]:<16} ({r["service_label"]:<15})  '
+            print(f'    {rank}. {r["fine_label"]:<16} ({r["service_label"]:<15}) '
                   f'{r["confidence"]:.4f}  {bar}')
         print(sep)
 
