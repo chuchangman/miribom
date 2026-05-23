@@ -13,6 +13,7 @@ const routes = [
   { path: '/products', name: 'ProductSearch', component: ProductSearchView },
   { path: '/products/:id', name: 'ProductDetail', component: ProductDetailView },
   { path: '/living-profile', name: 'LivingProfile', component: LivingProfileView },
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({
