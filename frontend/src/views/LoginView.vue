@@ -38,7 +38,10 @@ function removePasswordError() {
 }
 
 function handleLogin() {
-  if (validateEmail() && validatePassword()) {
+  const validEmail = validateEmail()
+  const validPassword = validatePassword()
+
+  if (validEmail && validPassword) {
     alert('로그인 성공!')
     console.log('이메일:', email.value)
     console.log('비밀번호:', password.value)
@@ -122,6 +125,7 @@ h1 {
   color: white;
   border: none;
   cursor: pointer;
+  border-radius: 5px;
 }
 #login-btn:hover {
   background-color: #007bb5;
