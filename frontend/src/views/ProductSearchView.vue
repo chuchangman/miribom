@@ -68,9 +68,13 @@ watch(
   <h1>제품검색페이지</h1>
   <select v-model="selectedCategory" @change="changeCategory">
     <option value="">전체</option>
-    <option value="세탁/건조">세탁/건조</option>
+    <option value="세탁·건조">세탁·건조</option>
     <option value="냉장고">냉장고</option>
+    <option value="주방소가전">주방소가전</option>
+    <option value="청소기">청소기</option>
     <option value="계절가전">계절가전</option>
+    <option value="제습기·가습기">제습기·가습기</option>
+    <option value="PC주변기기">PC주변기기</option>
     <option value="빔프로젝터">빔프로젝터</option>
   </select>
   <form @submit.prevent="handleSearch">

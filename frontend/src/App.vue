@@ -1,14 +1,25 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
+import AppSidebar from './components/AppSidebar.vue'
 </script>
 
 <template>
-  <nav>
-    <RouterLink to="/">Home</RouterLink> | <RouterLink to="/login">Login</RouterLink> |
-    <RouterLink to="/signup">Signup</RouterLink> | <RouterLink to="/products">Search</RouterLink> |
-    <RouterLink to="/living-profile">LivingProfile</RouterLink>
-  </nav>
-  <RouterView></RouterView>
+  <div class="app-layout">
+    <AppSidebar />
+    <main class="page-content">
+      <RouterView />
+    </main>
+  </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.page-content {
+  flex: 1;
+  padding: 24px;
+}
+</style>
