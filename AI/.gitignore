@@ -1,0 +1,58 @@
+# ── 환경 / 인증 ───────────────────────────────────────────────────────────────
+.env
+*.env.*
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── 가상환경 ──────────────────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# ── 데이터 (이미지 / 대용량) ──────────────────────────────────────────────────
+data/raw/
+data/processed/
+data/split/
+data/staging/
+data/external_test/
+data/external_test_rejected/
+data/rejected/
+
+# ── 메타데이터: 기본 제외, 필요한 기록만 추적 ────────────────────────────────
+data/metadata/*
+!data/metadata/
+!data/metadata/external_test_error_analysis.csv
+!data/metadata/rejected_images.csv
+!data/metadata/external_test_rejected.csv
+!data/metadata/wash_tower_staging_metadata.csv
+!data/metadata/washer_dryer_staging_metadata.csv
+!data/metadata/refrigerator_staging_metadata.csv
+!data/metadata/test_predictions_phase2.csv
+!data/metadata/phase2_cm_fine.png
+!data/metadata/phase2_cm_service.png
+
+# ── 체크포인트 ────────────────────────────────────────────────────────────────
+checkpoints/*.pth
+!checkpoints/.gitkeep
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# ── Claude Code 내부 ─────────────────────────────────────────────────────────
+.claude/
+
+# ── 실행 로그 ────────────────────────────────────────────────────────────────
+*.log
+uvicorn_*.txt

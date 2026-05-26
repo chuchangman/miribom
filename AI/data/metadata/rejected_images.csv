@@ -1,0 +1,11 @@
+﻿image_path,class_label,reject_reason
+data\rejected\washer_dryer\partial_crop\e3a41aa21875053e_00.jpg,washer_dryer,partial_crop
+data\rejected\washer_dryer\internal_part\d4a70a60a52a21f3_00.jpg,washer_dryer,internal_part
+2026-05-14 14:29:04,1,washer_dryer,data\processed\washer_dryer\naver_0096.jpg,data\processed\washer_dryer\naver_0166.jpg,data\rejected\duplicate\washer_dryer\naver_0166.jpg,duplicate_cross_split,False,False,"phash=0, 픽셀 불일치 (해상도·압축 차이)",350x350,600x600
+2026-05-14 14:29:04,2,refrigerator,data\processed\refrigerator\naver_0000.jpg,data\processed\refrigerator\naver_0133.jpg,data\rejected\duplicate\refrigerator\naver_0133.jpg,duplicate_cross_split,False,False,"phash=0, 픽셀 불일치 (해상도·압축 차이)",1000x1000,1000x1000
+2026-05-14 14:29:04,3,washer_dryer,data\processed\washer_dryer\naver_0121.jpg,data\processed\washer_dryer\naver_0097.jpg,data\rejected\duplicate\washer_dryer\naver_0097.jpg,duplicate_cross_split,False,False,"phash=0, 픽셀 불일치 (해상도·압축 차이)",1000x1000,1000x1000
+2026-05-14 14:29:04,4,washer_dryer,data\processed\washer_dryer\naver_0148.jpg,data\processed\washer_dryer\naver_0192.jpg,data\rejected\duplicate\washer_dryer\naver_0192.jpg,duplicate_cross_split,True,True,완전 동일 (픽셀+파일),344x344,344x344
+2026-05-14T16:56:35,v5_1,washer_dryer,data\split\train\wash_tower\stg_0006_4.jpg,data\processed\washer_dryer\naver_0293.jpg,data\rejected\duplicate\washer_dryer\naver_0293.jpg,duplicate_cross_split,True,wash_tower↔washer_dryer
+2026-05-14T16:56:35,v5_2,washer_dryer,data\split\train\wash_tower\stg_0074.jpg,data\processed\washer_dryer\naver_0307.jpg,data\rejected\duplicate\washer_dryer\naver_0307.jpg,duplicate_cross_split,True,wash_tower↔washer_dryer
+2026-05-14T16:56:35,v5_3,wash_tower,data\split\train\washer_dryer\naver_0294.jpg,data\processed\wash_tower\stg_0000_1.jpg,data\rejected\duplicate\wash_tower\stg_0000_1.jpg,duplicate_cross_split,True,washer_dryer↔wash_tower
+2026-05-14T16:56:35,v5_4,wash_tower,data\split\train\washer_dryer\naver_0302.jpg,data\processed\wash_tower\stg_0097_1.jpg,data\rejected\duplicate\wash_tower\stg_0097_1.jpg,duplicate_cross_split,True,washer_dryer↔wash_tower

@@ -1,0 +1,17 @@
+﻿original_path,rejected_path,service_folder,true_label,pred_label,pred_fine_label,confidence,error_type,moved_at
+data\external_test\refrigerator\ext_0004.jpg,data\external_test_rejected\label_error\refrigerator\ext_0004.jpg,refrigerator,refrigerator,washing_drying,washer_dryer,0.582281,label_error,2026-05-15T09:26:05
+data\external_test\refrigerator\ext_0014.jpg,data\external_test_rejected\out_of_scope\refrigerator\ext_0014.jpg,refrigerator,refrigerator,washing_drying,washer_dryer,0.992064,out_of_scope,2026-05-15T09:26:05
+data\external_test\refrigerator\ext_0015.jpg,data\external_test_rejected\label_error\refrigerator\ext_0015.jpg,refrigerator,refrigerator,washing_drying,washer_dryer,0.367049,label_error,2026-05-15T09:26:05
+data\external_test\refrigerator\ext_0025.jpg,data\external_test_rejected\label_error\refrigerator\ext_0025.jpg,refrigerator,refrigerator,washing_drying,wash_tower,0.436179,label_error,2026-05-15T09:26:05
+data\external_test\refrigerator\ext_0026.jpg,data\external_test_rejected\label_error\refrigerator\ext_0026.jpg,refrigerator,refrigerator,washing_drying,washer_dryer,0.759521,label_error,2026-05-15T09:26:05
+data\external_test\refrigerator\ext_0028.jpg,data\external_test_rejected\out_of_scope\refrigerator\ext_0028.jpg,refrigerator,refrigerator,washing_drying,washer_dryer,0.936715,out_of_scope,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0014.jpg,data\external_test_rejected\out_of_scope\washing_drying\ext_0014.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.906922,out_of_scope,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0019.jpg,data\external_test_rejected\label_error\washing_drying\ext_0019.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.499153,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0021.jpg,data\external_test_rejected\label_error\washing_drying\ext_0021.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.527723,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0024.jpg,data\external_test_rejected\label_error\washing_drying\ext_0024.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.857994,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0027.jpg,data\external_test_rejected\label_error\washing_drying\ext_0027.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.964515,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0036.jpg,data\external_test_rejected\label_error\washing_drying\ext_0036.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.464372,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0046.jpg,data\external_test_rejected\label_error\washing_drying\ext_0046.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.94429,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0055.jpg,data\external_test_rejected\label_error\washing_drying\ext_0055.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.954303,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0061.jpg,data\external_test_rejected\label_error\washing_drying\ext_0061.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.887448,label_error,2026-05-15T09:26:05
+data\external_test\washing_drying\ext_0062.jpg,data\external_test_rejected\label_error\washing_drying\ext_0062.jpg,washing_drying,washing_drying,refrigerator,refrigerator,0.903954,label_error,2026-05-15T09:26:05
