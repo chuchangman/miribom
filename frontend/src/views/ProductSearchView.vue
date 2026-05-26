@@ -66,21 +66,28 @@ watch(
 
 <template>
   <h1>제품검색페이지</h1>
-  <select v-model="selectedCategory" @change="changeCategory">
-    <option value="">전체</option>
-    <option value="세탁·건조">세탁·건조</option>
-    <option value="냉장고">냉장고</option>
-    <option value="주방소가전">주방소가전</option>
-    <option value="청소기">청소기</option>
-    <option value="계절가전">계절가전</option>
-    <option value="제습기·가습기">제습기·가습기</option>
-    <option value="PC주변기기">PC주변기기</option>
-    <option value="빔프로젝터">빔프로젝터</option>
-  </select>
-  <form @submit.prevent="handleSearch">
-    <input type="text" placeholder="제품명 검색" v-model.trim="searchInput" />
-    <button type="submit">검색</button>
-  </form>
+  <div class="search-controls">
+    <select v-model="selectedCategory" class="category-select" @change="changeCategory">
+      <option value="">전체</option>
+      <option value="세탁·건조">세탁·건조</option>
+      <option value="냉장고">냉장고</option>
+      <option value="주방소가전">주방소가전</option>
+      <option value="청소기">청소기</option>
+      <option value="계절가전">계절가전</option>
+      <option value="제습기·가습기">제습기·가습기</option>
+      <option value="PC주변기기">PC주변기기</option>
+      <option value="빔프로젝터">빔프로젝터</option>
+    </select>
+    <form @submit.prevent="handleSearch" class="search-form">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="제품명 검색"
+        v-model.trim="searchInput"
+      />
+      <button type="submit" class="text-button">검색</button>
+    </form>
+  </div>
   <p v-if="filteredProducts.length === 0">검색 결과가 없습니다.</p>
   <ul v-else>
     <li v-for="product in filteredProducts" :key="product.id">
@@ -90,15 +97,39 @@ watch(
 </template>
 
 <style scoped>
-form {
-  margin-bottom: 16px;
+.search-controls {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1em;
 }
-input {
-  padding: 8px;
-  margin-bottom: 8px;
+.category-select {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.5em;
+  font-size: 1em;
+  width: 130px;
 }
-button {
-  padding: 8px 16px;
+.search-form {
+  flex: 1;
+  display: flex;
+  border: 1px solid #ccc;
+  padding: 0.5em;
+  border-radius: 8px;
+  justify-content: space-between;
+}
+.search-input {
+  flex: 1;
+  border: 0px;
+  padding: 0.5em;
+  font-size: 1em;
+  width: 200px;
+  margin-right: 0.5em;
+}
+.text-button {
+  border: none;
+  background: none;
+  color: #2563eb;
+  cursor: pointer;
 }
 ul {
   list-style: none;

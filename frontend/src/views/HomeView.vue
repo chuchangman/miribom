@@ -18,9 +18,9 @@ function search() {
 <template>
   <h1>구매 전, 실제 사용 영상으로 <span class="highlight">미리봄</span></h1>
   <h3>크기 · 작동음 · 공간 배치를 짧은 영상으로 확인하세요</h3>
-  <form @submit.prevent="search">
-    <input type="text" v-model.trim="searchQuery" placeholder="제품명 검색" />
-    <button type="submit">검색</button>
+  <form @submit.prevent="search" class="search-form">
+    <input type="text" class="search-input" v-model.trim="searchQuery" placeholder="제품명 검색" />
+    <button type="submit" class="text-button">검색</button>
   </form>
   <nav>
     인기검색어 :
@@ -57,18 +57,28 @@ h3 {
 .highlight {
   color: blue;
 }
-form {
+.search-form {
   margin-bottom: 1em;
+  border: 1px solid #ccc;
+  padding: 0.5em;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
 }
-input {
+.search-input {
+  flex: 1;
+  border: 0px;
   padding: 0.5em;
   font-size: 1em;
   width: 200px;
   margin-right: 0.5em;
 }
-button {
-  padding: 0.5em 1em;
-  font-size: 1em;
+.text-button {
+  border: none;
+  background: none;
+  color: #2563eb;
+  cursor: pointer;
 }
 nav a {
   margin-right: 1em;
