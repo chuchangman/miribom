@@ -14,9 +14,9 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path
 from .views import (
+    SignupView, EmailLoginView,
     NaverLoginView, NaverCallbackView,
     KakaoLoginView, KakaoCallbackView,
     GoogleLoginView, GoogleCallbackView,
@@ -25,6 +25,8 @@ from .views import (
 app_name = 'users'
 
 urlpatterns = [
+    path('signup/', SignupView.as_view()),
+    path('login/', EmailLoginView.as_view()),
     path('naver/', NaverLoginView.as_view()),
     path('naver/callback/', NaverCallbackView.as_view()),
     path('kakao/', KakaoLoginView.as_view()),
