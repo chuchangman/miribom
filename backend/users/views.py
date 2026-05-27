@@ -1,15 +1,17 @@
 import requests
 import os
 from django.shortcuts import redirect
+from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, Social_User
+from .models import User, SocialUser, EmailUser
+from .serializers import SignupSerializer, LoginSerializer
 
 
 def _get_or_create_social_user(provider, oauth_id, email, nickname):
-    social_user = Social_User.objects.filter(
+    social_user = SocialUser.objects.filter(
         oauth_provider=provider,
         oauth_id=oauth_id
     ).first()
@@ -18,7 +20,7 @@ def _get_or_create_social_user(provider, oauth_id, email, nickname):
         return social_user.user_id
 
     user = User.objects.create(nickname=nickname, is_deleted=False)
-    Social_User.objects.create(
+    SocialUser.objects.create(
         user_id=user,
         oauth_provider=provider,
         oauth_id=oauth_id,
@@ -33,6 +35,47 @@ def _issue_jwt(user):
         'access': str(refresh.access_token),
         'refresh': str(refresh),
     })
+
+
+# ── 이메일 회원가입 / 로그인 ─────────────────────────────────────────────
+
+class SignupView(APIView):
+    def post(self, request):
+        serializer = SignupSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        email = data['email']
+
+        if EmailUser.objects.filter(email=email).exists():
+            return Response({'error': '이미 사용 중인 이메일입니다.'}, status=status.HTTP_409_CONFLICT)
+
+        user = User.objects.create(nickname=data['nickname'], is_deleted=False)
+        EmailUser.objects.create(
+            user_id=user,
+            email=email,
+            password=make_password(data['password']),
+        )
+        return _issue_jwt(user)
+
+
+class EmailLoginView(APIView):
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        email_user = EmailUser.objects.filter(email=data['email']).first()
+
+        if not email_user or not check_password(data['password'], email_user.password):
+            return Response(
+                {'error': '이메일 또는 비밀번호가 올바르지 않습니다.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return _issue_jwt(email_user.user_id)
 
 
 # ── 네이버 ──────────────────────────────────────────────────────────────
