@@ -1,8 +1,13 @@
+import FavoriteView from '@/views/FavoriteView.vue'
 import HomeView from '@/views/HomeView.vue'
+import LikedView from '@/views/LikedView.vue'
 import LivingProfileView from '@/views/LivingProfileView.vue'
 import LoginView from '@/views/LoginView.vue'
+import MyPageView from '@/views/MyPageView.vue'
 import ProductDetailView from '@/views/ProductDetailView.vue'
 import ProductSearchView from '@/views/ProductSearchView.vue'
+import ProfileEditView from '@/views/ProfileEditView.vue'
+import ShortsView from '@/views/ShortsView.vue'
 import SignupView from '@/views/SignupView.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -13,6 +18,11 @@ const routes = [
   { path: '/products', name: 'ProductSearch', component: ProductSearchView },
   { path: '/products/:id', name: 'ProductDetail', component: ProductDetailView },
   { path: '/living-profile', name: 'LivingProfile', component: LivingProfileView },
+  { path: '/shorts', name: 'Shorts', component: ShortsView },
+  { path: '/mypage', name: 'MyPage', component: MyPageView },
+  { path: '/favorites', name: 'Favorite', component: FavoriteView },
+  { path: '/likes', name: 'Liked', component: LikedView },
+  { path: '/profile-edit', name: 'ProfileEdit', component: ProfileEditView },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
