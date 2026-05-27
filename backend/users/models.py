@@ -10,13 +10,13 @@ class User(models.Model):
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
 
-class Social_User(models.Model):
+class SocialUser(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     oauth_provider = models.CharField(max_length=20, null=False)
     oauth_id = models.CharField(max_length=255, null=False)
     email = models.CharField(max_length=255)
 
-class Email_User(models.Model):
+class EmailUser(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     email = models.CharField(max_length=255, null=False)
     password = models.CharField(max_length=255, null=False)
