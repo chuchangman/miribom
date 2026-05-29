@@ -41,7 +41,7 @@ class AppliancePredictor:
         if not ckpt_path.exists():
             raise FileNotFoundError(
                 f'체크포인트 파일이 없습니다: {ckpt_path}\n'
-                '  → AI/checkpoints/phase2_service_best_model.pth 를 확인해주세요.'
+                '  → AI/checkpoints/phase3_18class_service_best.pth 를 확인해주세요.'
             )
 
         if device is None:
@@ -52,12 +52,14 @@ class AppliancePredictor:
         ckpt             = torch.load(ckpt_path, map_location=device, weights_only=False)
         self.classes: list[str] = ckpt['classes']
         self.meta: dict = {
-            'checkpoint': ckpt_path.name,
-            'phase':      ckpt['phase'],
-            'epoch':      ckpt['epoch'],
-            'val_acc':    round(float(ckpt['val_acc']), 4),
-            'device':     str(device),
-            'classes':    self.classes,
+            'checkpoint':  ckpt_path.name,
+            'phase':       ckpt['phase'],
+            'epoch':       ckpt['epoch'],
+            'val_loss':    round(float(ckpt['val_loss']), 6) if 'val_loss' in ckpt else None,
+            'val_acc':     round(float(ckpt['val_acc']), 4),
+            'num_classes': len(self.classes),
+            'device':      str(device),
+            'classes':     self.classes,
         }
 
         num_classes = len(self.classes)
