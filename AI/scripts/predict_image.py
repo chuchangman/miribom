@@ -20,16 +20,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import config
 from core.predictor import AppliancePredictor, SUPPORTED_EXTENSIONS
 
-DEFAULT_CKPT = PROJECT_ROOT / config.CHECKPOINTS_DIR / 'phase2_service_best_model.pth'
+DEFAULT_CKPT = PROJECT_ROOT / config.CHECKPOINTS_DIR / 'phase3_18class_service_best.pth'
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='가전 이미지 분류 추론 — EfficientNetV2-S Phase 2',
+        description='가전 이미지 분류 추론 — EfficientNetV2-S Phase 3 Refined (18-class)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''\
 예시:
-  python scripts/predict_image.py --image data/external_test/refrigerator/ext_0000.jpg
+  python scripts/predict_image.py --image data/split/test/refrigerator/naver_0000.jpg
   python scripts/predict_image.py --image photo.jpg --json
   python scripts/predict_image.py --image photo.jpg --cpu
         ''',

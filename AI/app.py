@@ -25,7 +25,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import config
 from core.predictor import AppliancePredictor, SUPPORTED_MIME_TYPES
 
-CKPT_PATH = PROJECT_ROOT / config.CHECKPOINTS_DIR / 'phase2_service_best_model.pth'
+CKPT_PATH = PROJECT_ROOT / config.CHECKPOINTS_DIR / 'phase3_18class_service_best.pth'
 
 # ── 전역 predictor (서버 시작 시 1회 로드) ────────────────────────────────────
 predictor: AppliancePredictor | None = None
@@ -54,8 +54,8 @@ async def lifespan(app: FastAPI):
 # ── FastAPI 앱 ─────────────────────────────────────────────────────────────────
 app = FastAPI(
     title='가전 이미지 분류 API',
-    description='EfficientNetV2-S Phase 2 — refrigerator / washing_drying 서비스 분류',
-    version='1.0.0',
+    description='EfficientNetV2-S Phase 3 Refined — 18-class 가전 세부 분류 + 8-category 서비스 분류',
+    version='3.0.0',
     lifespan=lifespan,
 )
 
