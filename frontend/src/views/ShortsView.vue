@@ -6,6 +6,7 @@ import { useAuth } from '@/composables/useAuth'
 
 const { isLogin } = useAuth()
 const router = useRouter()
+const isScrolling = ref(false)
 
 const currentIndex = ref(0)
 const videos = ref(mockVideos.map((video) => ({ ...video })))
@@ -17,7 +18,7 @@ const video = computed(() => {
 })
 
 const toggleLiked = () => {
-  if (!isLogin) {
+  if (!isLogin.value) {
     alert('로그인이 필요한 기능입니다.')
     router.push('/login')
     return
@@ -30,6 +31,20 @@ const toggleLiked = () => {
     }
   }
   videos.value[currentIndex.value].isLiked = !videos.value[currentIndex.value].isLiked
+}
+const handleWheel = (event) => {
+  if (isScrolling.value) {
+    return
+  }
+  if (event.deltaY > 0) {
+    currentIndex.value = (currentIndex.value + 1) % videos.value.length
+  } else if (event.deltaY < 0) {
+    currentIndex.value = (currentIndex.value - 1 + videos.value.length) % videos.value.length
+  }
+  isScrolling.value = true
+  setTimeout(() => {
+    isScrolling.value = false
+  }, 1000)
 }
 const goNextVideo = () => {
   currentIndex.value = (currentIndex.value + 1) % videos.value.length
@@ -46,7 +61,7 @@ const goProductDetail = (productId) => {
   <h1>쇼츠페이지</h1>
   <p v-if="!video">등록된 영상 후기가 없습니다.</p>
   <section class="shorts-layout" v-else>
-    <div class="video-area">
+    <div class="video-area" @wheel.prevent="handleWheel">
       <div class="video-frame">
         <img :src="video.thumbnailUrl" :alt="video.productName" />
       </div>
