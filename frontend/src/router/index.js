@@ -24,7 +24,7 @@ const routes = [
   { path: '/favorites', name: 'Favorite', component: FavoriteView },
   { path: '/likes', name: 'Liked', component: LikedView },
   { path: '/profile-edit', name: 'ProfileEdit', component: ProfileEditView },
-  { path: '/review', name: 'ReviewCreate', component: ReviewCreateView},
+  { path: '/review', name: 'ReviewCreate', component: ReviewCreateView },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

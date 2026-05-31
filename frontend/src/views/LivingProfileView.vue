@@ -1,17 +1,17 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const housingType = ref('')
 const areaSize = ref(1)
 
 const housingTypeError = ref('')
 const areaSizeError = ref('')
-const successMessage = ref('')
 
 function saveLivingProfile() {
   housingTypeError.value = ''
   areaSizeError.value = ''
-  successMessage.value = ''
 
   if (!housingType.value) {
     housingTypeError.value = '주거형태를 선택해주세요.'
@@ -25,7 +25,7 @@ function saveLivingProfile() {
     return
   }
 
-  successMessage.value = '생활환경 정보가 저장되었습니다.'
+  router.push('/')
 }
 </script>
 
@@ -95,7 +95,6 @@ function saveLivingProfile() {
 
   <div v-if="housingTypeError" class="error-message">{{ housingTypeError }}</div>
   <div v-if="areaSizeError" class="error-message">{{ areaSizeError }}</div>
-  <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
 </template>
 
 <style scoped>
@@ -163,12 +162,6 @@ input[type='range'] {
 .error-message {
   margin-top: 8px;
   color: #ef4444;
-  font-size: 14px;
-}
-
-.success-message {
-  margin-top: 8px;
-  color: #059669;
   font-size: 14px;
 }
 </style>

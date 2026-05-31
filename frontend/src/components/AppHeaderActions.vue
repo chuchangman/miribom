@@ -1,17 +1,20 @@
 <script setup>
-import { RouterLink } from 'vue-router'
-import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
-const isLogin = ref(true)
-const logout = () => {
-  alert('로그아웃 되었습니다.')
+const router = useRouter()
+const { isLogin, logout } = useAuth()
+
+const handleLogout = () => {
+  logout()
+  router.push('/login')
 }
 </script>
 
 <template>
   <nav>
     <div class="login-actions" v-if="isLogin">
-      <button type="button" @click="logout">로그아웃</button>
+      <button type="button" @click="handleLogout">로그아웃</button>
       <RouterLink to="/mypage">마이페이지</RouterLink>
     </div>
     <div class="guest-actions" v-else>

@@ -2,7 +2,9 @@
 import mockVideos from '@/data/mockVideos'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
+const { isLogin } = useAuth()
 const router = useRouter()
 
 const currentIndex = ref(0)
@@ -15,6 +17,11 @@ const video = computed(() => {
 })
 
 const toggleLiked = () => {
+  if (!isLogin) {
+    alert('로그인이 필요한 기능입니다.')
+    router.push('/login')
+    return
+  }
   if (video.value.isLiked === false) {
     videos.value[currentIndex.value].likeCount += 1
   } else {

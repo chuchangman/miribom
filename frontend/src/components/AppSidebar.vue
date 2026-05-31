@@ -1,9 +1,9 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import { ref } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import miribomLogo from '@/assets/images/miribom-logo.svg'
 
-const isLogin = ref(true)
+const { isLogin } = useAuth()
 </script>
 
 <template>
