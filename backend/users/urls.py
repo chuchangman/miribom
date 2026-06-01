@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.urls import path
 from .views import (
-    SignupView, EmailLoginView,
+    SignupView, EmailLoginView, MeView,
     NaverLoginView, NaverCallbackView,
     KakaoLoginView, KakaoCallbackView,
     GoogleLoginView, GoogleCallbackView,
@@ -27,6 +27,7 @@ app_name = 'users'
 urlpatterns = [
     path('signup/', SignupView.as_view()),
     path('login/', EmailLoginView.as_view()),
+    path('me/', MeView.as_view()),
     path('naver/', NaverLoginView.as_view()),
     path('naver/callback/', NaverCallbackView.as_view()),
     path('kakao/', KakaoLoginView.as_view()),
