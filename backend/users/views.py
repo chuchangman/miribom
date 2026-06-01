@@ -1,13 +1,52 @@
 import requests
 import os
-from django.shortcuts import redirect
+from django.shortcuts import redirect as django_redirect
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.exceptions import TokenError
 from .models import User, SocialUser, EmailUser
 from .serializers import SignupSerializer, LoginSerializer
+
+FRONTEND_URL = 'http://localhost:5173'
+
+
+def _set_jwt_cookies(response, refresh):
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=False,  # 프로덕션에서는 True (HTTPS)
+        samesite='Lax',
+        max_age=int(refresh.access_token.lifetime.total_seconds()),
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        secure=False,  # 프로덕션에서는 True (HTTPS)
+        samesite='Lax',
+        max_age=int(refresh.lifetime.total_seconds()),
+    )
+    return response
+
+
+def _issue_jwt(user):
+    """이메일 로그인/회원가입용 — 쿠키만 설정, body에 토큰 없음"""
+    refresh = RefreshToken.for_user(user)
+    response = Response(status=status.HTTP_200_OK)
+    return _set_jwt_cookies(response, refresh)
+
+
+def _issue_jwt_redirect(user):
+    """소셜 로그인 콜백용 — 쿠키 설정 후 프론트로 redirect"""
+    refresh = RefreshToken.for_user(user)
+    response = django_redirect(FRONTEND_URL)
+    return _set_jwt_cookies(response, refresh)
 
 
 def _get_or_create_social_user(provider, oauth_id, email, nickname):
@@ -27,34 +66,6 @@ def _get_or_create_social_user(provider, oauth_id, email, nickname):
         email=email,
     )
     return user
-
-
-def _issue_jwt(user):
-    refresh = RefreshToken.for_user(user)
-    access_token = str(refresh.access_token)
-    refresh_token = str(refresh)
-
-    response = Response({
-        'access': access_token,
-        'refresh': refresh_token,
-    })
-    response.set_cookie(
-        key='access_token',
-        value=access_token,
-        httponly=True,
-        secure=False,  # 프로덕션에서는 True (HTTPS)
-        samesite='Lax',
-        max_age=int(refresh.access_token.lifetime.total_seconds()),
-    )
-    response.set_cookie(
-        key='refresh_token',
-        value=refresh_token,
-        httponly=True,
-        secure=False,  # 프로덕션에서는 True (HTTPS)
-        samesite='Lax',
-        max_age=int(refresh.lifetime.total_seconds()),
-    )
-    return response
 
 
 # ── 이메일 회원가입 / 로그인 ─────────────────────────────────────────────
@@ -98,6 +109,27 @@ class EmailLoginView(APIView):
         return _issue_jwt(email_user.user_id)
 
 
+# ── 내 정보 조회 ─────────────────────────────────────────────────────────
+
+class MeView(APIView):
+    def get(self, request):
+        access_token = request.COOKIES.get('access_token')
+        if not access_token:
+            return Response({'error': '인증이 필요합니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            token = AccessToken(access_token)
+            user = User.objects.get(id=token['user_id'])
+        except (TokenError, User.DoesNotExist):
+            return Response({'error': '유효하지 않은 토큰입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response({
+            'id': user.id,
+            'nickname': user.nickname,
+            'profile_image_url': user.profile_image_url,
+        })
+
+
 # ── 네이버 ──────────────────────────────────────────────────────────────
 
 class NaverLoginView(APIView):
@@ -111,7 +143,7 @@ class NaverLoginView(APIView):
             f"&redirect_uri={redirect_uri}"
             f"&state=miribom"
         )
-        return redirect(naver_auth_url)
+        return django_redirect(naver_auth_url)
 
 
 class NaverCallbackView(APIView):
@@ -144,7 +176,7 @@ class NaverCallbackView(APIView):
         nickname = user_info.get('nickname', '네이버유저')
 
         user = _get_or_create_social_user('naver', oauth_id, email, nickname)
-        return _issue_jwt(user)
+        return _issue_jwt_redirect(user)
 
 
 # ── 카카오 ──────────────────────────────────────────────────────────────
@@ -159,7 +191,7 @@ class KakaoLoginView(APIView):
             f"&client_id={client_id}"
             f"&redirect_uri={redirect_uri}"
         )
-        return redirect(kakao_auth_url)
+        return django_redirect(kakao_auth_url)
 
 
 class KakaoCallbackView(APIView):
@@ -192,7 +224,7 @@ class KakaoCallbackView(APIView):
         nickname = kakao_account.get('profile', {}).get('nickname', '카카오유저')
 
         user = _get_or_create_social_user('kakao', oauth_id, email, nickname)
-        return _issue_jwt(user)
+        return _issue_jwt_redirect(user)
 
 
 # ── 구글 ────────────────────────────────────────────────────────────────
@@ -208,7 +240,7 @@ class GoogleLoginView(APIView):
             f"&redirect_uri={redirect_uri}"
             f"&scope=openid+email+profile"
         )
-        return redirect(google_auth_url)
+        return django_redirect(google_auth_url)
 
 
 class GoogleCallbackView(APIView):
@@ -239,4 +271,4 @@ class GoogleCallbackView(APIView):
         nickname = user_info.get('name', '구글유저')
 
         user = _get_or_create_social_user('google', oauth_id, email, nickname)
-        return _issue_jwt(user)
+        return _issue_jwt_redirect(user)
