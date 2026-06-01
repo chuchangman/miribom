@@ -2,6 +2,13 @@
 import { RouterView } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import AppHeaderActions from './components/AppHeaderActions.vue'
+import { useAuth } from './composables/useAuth.js'
+import { onMounted } from 'vue'
+const { checkAuth } = useAuth()
+
+onMounted(async () => {
+  await checkAuth()
+})
 </script>
 
 <template>
