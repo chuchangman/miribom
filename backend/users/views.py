@@ -31,10 +31,30 @@ def _get_or_create_social_user(provider, oauth_id, email, nickname):
 
 def _issue_jwt(user):
     refresh = RefreshToken.for_user(user)
-    return Response({
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    response = Response({
+        'access': access_token,
+        'refresh': refresh_token,
     })
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        secure=False,  # 프로덕션에서는 True (HTTPS)
+        samesite='Lax',
+        max_age=int(refresh.access_token.lifetime.total_seconds()),
+    )
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        secure=False,  # 프로덕션에서는 True (HTTPS)
+        samesite='Lax',
+        max_age=int(refresh.lifetime.total_seconds()),
+    )
+    return response
 
 
 # ── 이메일 회원가입 / 로그인 ─────────────────────────────────────────────
