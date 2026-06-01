@@ -1,13 +1,17 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { AUTH_API_URL } from '@/config/api'
+import { useAuth } from '@/composables/useAuth'
 
+const { login } = useAuth()
+const router = useRouter()
 const email = ref('')
 const password = ref('')
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
 
-function validateEmail() {
+const validateEmail = () => {
   if (!email.value) {
     emailErrorMessage.value = '이메일을 입력해주세요.'
     return false
@@ -17,7 +21,7 @@ function validateEmail() {
   }
 }
 
-function validatePassword() {
+const validatePassword = () => {
   if (!password.value) {
     passwordErrorMessage.value = '비밀번호를 입력해주세요.'
     return false
@@ -30,37 +34,48 @@ function validatePassword() {
   }
 }
 
-function removeEmailError() {
+const removeEmailError = () => {
   emailErrorMessage.value = ''
 }
-function removePasswordError() {
+const removePasswordError = () => {
   passwordErrorMessage.value = ''
 }
 
-function handleLogin() {
+const handleLogin = async () => {
   const validEmail = validateEmail()
   const validPassword = validatePassword()
 
-  if (validEmail && validPassword) {
-    alert('로그인 성공!')
-    console.log('이메일:', email.value)
-    console.log('비밀번호:', password.value)
-  } else {
+  if (!validEmail || !validPassword) {
     alert('로그인 실패! 입력한 정보를 확인해주세요.')
+    return
   }
-  // 이 아래는 실제 로그인 API 정하면 수정할것
-  //   axios({
-  //     method:'POST',
-  //     url:'/api/login/',
-  //     headers: {
-  //     },
-  //     data: {
-  //       email: email.value,
-  //       password: password.value
-  //     }
-  //   }).then((response) => {
-  //     console.log(response.data);
-  //   })
+  try {
+    const response = await fetch(`${AUTH_API_URL}/login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value,
+      }),
+    })
+    if (!response.ok) {
+      throw new Error('로그인 실패')
+    }
+    const data = await response.json()
+    login(data.access, data.refresh)
+    console.log(data.access)
+    console.log(data.refresh)
+    alert('로그인성공')
+    router.push('/')
+  } catch {
+    alert('이메일 또는 비밀번호가 올바르지 않습니다.')
+  }
+}
+
+const oauthLogin = (provider) => {
+  window.location.href = `${AUTH_API_URL}/${provider}/`
 }
 </script>
 
@@ -91,9 +106,11 @@ function handleLogin() {
   </form>
   <RouterLink to="/signup" id="signup-link">계정이 없으신가요?</RouterLink><br />
   <section>
-    <button id="google-login-btn" type="button">Google로 로그인</button>
-    <button id="naver-login-btn" type="button">Naver로 로그인</button>
-    <button id="kakao-login-btn" type="button">Kakao로 로그인</button>
+    <button id="google-login-btn" type="button" @click="oauthLogin('google')">
+      Google로 로그인
+    </button>
+    <button id="naver-login-btn" type="button" @click="oauthLogin('naver')">Naver로 로그인</button>
+    <button id="kakao-login-btn" type="button" @click="oauthLogin('kakao')">Kakao로 로그인</button>
   </section>
 </template>
 

@@ -7,6 +7,7 @@ import MyPageView from '@/views/MyPageView.vue'
 import ProductDetailView from '@/views/ProductDetailView.vue'
 import ProductSearchView from '@/views/ProductSearchView.vue'
 import ProfileEditView from '@/views/ProfileEditView.vue'
+import ReviewCreateView from '@/views/ReviewCreateView.vue'
 import ShortsView from '@/views/ShortsView.vue'
 import SignupView from '@/views/SignupView.vue'
 import { createRouter, createWebHistory } from 'vue-router'
@@ -23,6 +24,7 @@ const routes = [
   { path: '/favorites', name: 'Favorite', component: FavoriteView },
   { path: '/likes', name: 'Liked', component: LikedView },
   { path: '/profile-edit', name: 'ProfileEdit', component: ProfileEditView },
+  { path: '/review', name: 'ReviewCreate', component: ReviewCreateView },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

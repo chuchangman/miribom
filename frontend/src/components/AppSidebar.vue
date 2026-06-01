@@ -1,6 +1,9 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import miribomLogo from '@/assets/images/miribom-logo.svg'
+
+const { isLogin } = useAuth()
 </script>
 
 <template>
@@ -8,25 +11,31 @@ import miribomLogo from '@/assets/images/miribom-logo.svg'
     <RouterLink to="/" class="sidebar-logo">
       <img :src="miribomLogo" alt="미리봄 로고" />
     </RouterLink>
-    <p>탐색</p>
-    <RouterLink to="/" class="sidebar-link">홈</RouterLink>
-    <RouterLink to="/products" class="sidebar-link">둘러보기</RouterLink>
-    <RouterLink to="/shorts" class="sidebar-link">숏폼</RouterLink>
-    <p>내 활동</p>
-    <RouterLink to="/favorites" class="sidebar-link">즐겨찾기</RouterLink>
-    <RouterLink to="/likes" class="sidebar-link">좋아요</RouterLink>
-    <RouterLink to="/mypage" class="sidebar-link">마이페이지</RouterLink>
-    <p>카테고리</p>
-    <RouterLink to="/products?category=세탁·건조" class="sidebar-link">세탁·건조</RouterLink>
-    <RouterLink to="/products?category=냉장고" class="sidebar-link">냉장고</RouterLink>
-    <RouterLink to="/products?category=주방소가전" class="sidebar-link">주방소가전</RouterLink>
-    <RouterLink to="/products?category=청소기" class="sidebar-link">청소기</RouterLink>
-    <RouterLink to="/products?category=계절가전" class="sidebar-link">계절가전</RouterLink>
-    <RouterLink to="/products?category=제습기·가습기" class="sidebar-link"
-      >제습기·가습기</RouterLink
-    >
-    <RouterLink to="/products?category=PC주변기기" class="sidebar-link">PC주변기기</RouterLink>
-    <RouterLink to="/products?category=빔프로젝터" class="sidebar-link">빔프로젝터</RouterLink>
+    <div class="product-searching">
+      <p>탐색</p>
+      <RouterLink to="/" class="sidebar-link">홈</RouterLink>
+      <RouterLink to="/products" class="sidebar-link">둘러보기</RouterLink>
+      <RouterLink to="/shorts" class="sidebar-link">숏폼</RouterLink>
+    </div>
+    <div class="user-action" v-if="isLogin">
+      <p>내 활동</p>
+      <RouterLink to="/favorites" class="sidebar-link">즐겨찾기</RouterLink>
+      <RouterLink to="/likes" class="sidebar-link">좋아요</RouterLink>
+      <RouterLink to="/review" class="sidebar-link">후기 등록</RouterLink>
+    </div>
+    <div class="category">
+      <p>카테고리</p>
+      <RouterLink to="/products?category=세탁·건조" class="sidebar-link">세탁·건조</RouterLink>
+      <RouterLink to="/products?category=냉장고" class="sidebar-link">냉장고</RouterLink>
+      <RouterLink to="/products?category=주방소가전" class="sidebar-link">주방소가전</RouterLink>
+      <RouterLink to="/products?category=청소기" class="sidebar-link">청소기</RouterLink>
+      <RouterLink to="/products?category=계절가전" class="sidebar-link">계절가전</RouterLink>
+      <RouterLink to="/products?category=제습기·가습기" class="sidebar-link"
+        >제습기·가습기</RouterLink
+      >
+      <RouterLink to="/products?category=PC주변기기" class="sidebar-link">PC주변기기</RouterLink>
+      <RouterLink to="/products?category=빔프로젝터" class="sidebar-link">빔프로젝터</RouterLink>
+    </div>
   </nav>
 </template>
 

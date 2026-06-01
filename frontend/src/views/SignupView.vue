@@ -1,7 +1,12 @@
 <script setup>
 import defaultProfile from '@/assets/images/default-profile.png'
 import { ref } from 'vue'
+import { AUTH_API_URL } from '@/config/api'
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
+const { login } = useAuth()
+const router = useRouter()
 const profileImg = ref(null)
 const previewImageUrl = ref(defaultProfile)
 
@@ -15,7 +20,7 @@ const errorEmail = ref('')
 const errorPassword = ref('')
 const errorConfirmPassword = ref('')
 
-function handleProfileImgChange(event) {
+const handleProfileImgChange = (event) => {
   const file = event.target.files[0]
   if (file) {
     profileImg.value = file
@@ -26,7 +31,7 @@ function handleProfileImgChange(event) {
   }
 }
 
-function validateNickname() {
+const validateNickname = () => {
   if (nickname.value.length < 3) {
     errorNickname.value = '닉네임은 최소 3자 이상이어야 합니다.'
     return false
@@ -35,11 +40,11 @@ function validateNickname() {
     return true
   }
 }
-function removeNicknameError() {
+const removeNicknameError = () => {
   errorNickname.value = ''
 }
 
-function validateEmail() {
+const validateEmail = () => {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailPattern.test(email.value)) {
     errorEmail.value = '유효한 이메일 주소를 입력해주세요.'
@@ -49,11 +54,11 @@ function validateEmail() {
     return true
   }
 }
-function removeEmailError() {
+const removeEmailError = () => {
   errorEmail.value = ''
 }
 
-function validatePassword() {
+const validatePassword = () => {
   if (password.value.length < 8) {
     errorPassword.value = '비밀번호는 최소 8자 이상이어야 합니다.'
     return false
@@ -63,15 +68,15 @@ function validatePassword() {
     return true
   }
 }
-function removePasswordError() {
+const removePasswordError = () => {
   errorPassword.value = ''
 }
 
-function removeConfirmPasswordError() {
+const removeConfirmPasswordError = () => {
   errorConfirmPassword.value = ''
 }
 
-function checkPasswordMatch() {
+const checkPasswordMatch = () => {
   if (!confirmPassword.value) {
     errorConfirmPassword.value = '비밀번호 확인을 입력해주세요.'
     return false
@@ -83,21 +88,53 @@ function checkPasswordMatch() {
     return true
   }
 }
-function changePassword() {
+const changePassword = () => {
   if (confirmPassword.value) {
     checkPasswordMatch()
   }
 }
 
-function signup() {
+const signup = async () => {
   const validNickname = validateNickname()
   const validEmail = validateEmail()
   const validPassword = validatePassword()
   const passwordsMatch = checkPasswordMatch()
-  if (validNickname && validEmail && validPassword && passwordsMatch) {
-    alert('회원가입이 완료되었습니다.')
-  } else {
+  if (!validNickname || !validEmail || !validPassword || !passwordsMatch) {
     alert('입력한 정보를 확인해주세요.')
+  }
+  try {
+    const response = await fetch(`${AUTH_API_URL}/signup/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nickname: nickname.value,
+        email: email.value,
+        password: password.value,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      if (response.status === 400) {
+        alert('입력하신 정보를 다시 확인해주세요.')
+        return
+      }
+
+      if (response.status === 401 || response.status === 409) {
+        alert(data.error || '요청 처리에 실패했습니다.')
+        return
+      }
+
+      alert('요청 처리에 실패했습니다.')
+      return
+    }
+    login(data.access, data.refresh)
+    router.push('/living-profile')
+  } catch (error) {
+    console.log(error)
   }
 }
 </script>
