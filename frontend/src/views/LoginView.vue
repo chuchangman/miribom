@@ -55,18 +55,29 @@ const handleLogin = async () => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({
         email: email.value,
         password: password.value,
       }),
     })
     if (!response.ok) {
-      throw new Error('로그인 실패')
+      const data = await response.json()
+
+      if (response.status === 400) {
+        alert('입력하신 정보를 다시 확인해주세요.')
+        return
+      }
+
+      if (response.status === 401) {
+        alert(data.error || '이메일 또는 비밀번호가 올바르지 않습니다.')
+        return
+      }
+
+      alert('로그인에 실패했습니다.')
+      return
     }
-    const data = await response.json()
-    login(data.access, data.refresh)
-    console.log(data.access)
-    console.log(data.refresh)
+    await login()
     alert('로그인성공')
     router.push('/')
   } catch {

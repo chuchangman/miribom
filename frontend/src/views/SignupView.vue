@@ -101,6 +101,7 @@ const signup = async () => {
   const passwordsMatch = checkPasswordMatch()
   if (!validNickname || !validEmail || !validPassword || !passwordsMatch) {
     alert('입력한 정보를 확인해주세요.')
+    return
   }
   try {
     const response = await fetch(`${AUTH_API_URL}/signup/`, {
@@ -108,6 +109,7 @@ const signup = async () => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({
         nickname: nickname.value,
         email: email.value,
@@ -115,9 +117,8 @@ const signup = async () => {
       }),
     })
 
-    const data = await response.json()
-
     if (!response.ok) {
+      const data = await response.json()
       if (response.status === 400) {
         alert('입력하신 정보를 다시 확인해주세요.')
         return
@@ -131,10 +132,10 @@ const signup = async () => {
       alert('요청 처리에 실패했습니다.')
       return
     }
-    login(data.access, data.refresh)
+    await login()
     router.push('/living-profile')
-  } catch (error) {
-    console.log(error)
+  } catch {
+    alert('회원가입 실패')
   }
 }
 </script>
