@@ -109,6 +109,39 @@ class EmailLoginView(APIView):
         return _issue_jwt(email_user.user_id)
 
 
+# ── 로그아웃 / 토큰 갱신 ────────────────────────────────────────────────
+
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
+
+
+class CookieTokenRefreshView(APIView):
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': '리프레시 토큰이 없습니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            refresh = RefreshToken(refresh_token)
+        except TokenError:
+            return Response({'error': '유효하지 않은 리프레시 토큰입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response(status=status.HTTP_200_OK)
+        response.set_cookie(
+            key='access_token',
+            value=str(refresh.access_token),
+            httponly=True,
+            secure=False,  # 프로덕션에서는 True
+            samesite='Lax',
+            max_age=int(refresh.access_token.lifetime.total_seconds()),
+        )
+        return response
+
+
 # ── 내 정보 조회 ─────────────────────────────────────────────────────────
 
 class MeView(APIView):
