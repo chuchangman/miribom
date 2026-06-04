@@ -1,29 +1,3 @@
-<script setup>
-import { useRouter } from 'vue-router'
-import defaultProfile from '@/assets/images/default-profile.png'
-
-const router = useRouter()
-
-const mockUser = {
-  nickname: '미리봄 사용자',
-  email: 'user@example.com',
-  profileImageUrl: '',
-  housingType: '원룸',
-  areaSize: 7,
-  uploadedVideoCount: 0,
-  likedVideoCount: 0,
-  favoriteProductCount: 4,
-}
-
-const goProfileEdit = () => {
-  router.push('/profile-edit')
-}
-
-const goLivingProfile = () => {
-  router.push('/living-profile')
-}
-</script>
-
 <template>
   <section class="mypage">
     <h1>마이페이지</h1>
@@ -87,6 +61,32 @@ const goLivingProfile = () => {
     </section>
   </section>
 </template>
+
+<script setup>
+import { useRouter } from 'vue-router'
+import defaultProfile from '@/assets/images/default-profile.png'
+
+const router = useRouter()
+
+const mockUser = {
+  nickname: '미리봄 사용자',
+  email: 'user@example.com',
+  profileImageUrl: '',
+  housingType: '원룸',
+  areaSize: 7,
+  uploadedVideoCount: 0,
+  likedVideoCount: 0,
+  favoriteProductCount: 4,
+}
+
+const goProfileEdit = () => {
+  router.push('/profile-edit')
+}
+
+const goLivingProfile = () => {
+  router.push('/living-profile')
+}
+</script>
 
 <style scoped>
 .mypage {

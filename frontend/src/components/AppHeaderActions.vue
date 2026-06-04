@@ -1,16 +1,3 @@
-<script setup>
-import { RouterLink, useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
-
-const router = useRouter()
-const { isLogin, logout } = useAuth()
-
-const handleLogout = () => {
-  logout()
-  router.push('/login')
-}
-</script>
-
 <template>
   <nav>
     <div class="login-actions" v-if="isLogin">
@@ -23,6 +10,19 @@ const handleLogout = () => {
     </div>
   </nav>
 </template>
+
+<script setup>
+import { RouterLink, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
+
+const router = useRouter()
+const { isLogin, logout } = useAuth()
+
+const handleLogout = () => {
+  logout()
+  router.push('/login')
+}
+</script>
 
 <style scoped>
 .login-actions,

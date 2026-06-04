@@ -1,10 +1,3 @@
-<script setup>
-import mockProducts from '@/data/mockProducts'
-import ProductCard from '@/components/ProductCard.vue'
-
-const favoriteProducts = mockProducts.slice(0, 4)
-</script>
-
 <template>
   <h1>즐겨찾기페이지</h1>
   <ul>
@@ -13,6 +6,13 @@ const favoriteProducts = mockProducts.slice(0, 4)
     </li>
   </ul>
 </template>
+
+<script setup>
+import mockProducts from '@/data/mockProducts'
+import ProductCard from '@/components/ProductCard.vue'
+
+const favoriteProducts = mockProducts.slice(0, 4)
+</script>
 
 <style scoped>
 ul {

@@ -1,11 +1,3 @@
-<script setup>
-import { RouterLink } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
-import miribomLogo from '@/assets/images/miribom-logo.svg'
-
-const { isLogin } = useAuth()
-</script>
-
 <template>
   <nav>
     <RouterLink to="/" class="sidebar-logo">
@@ -38,6 +30,14 @@ const { isLogin } = useAuth()
     </div>
   </nav>
 </template>
+
+<script setup>
+import { RouterLink } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
+import miribomLogo from '@/assets/images/miribom-logo.svg'
+
+const { isLogin } = useAuth()
+</script>
 
 <style scoped>
 nav {

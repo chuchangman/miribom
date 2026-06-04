@@ -1,3 +1,35 @@
+<template>
+  <h1>제품검색페이지</h1>
+  <div class="search-controls">
+    <select v-model="selectedCategory" class="category-select" @change="changeCategory">
+      <option value="">전체</option>
+      <option value="세탁·건조">세탁·건조</option>
+      <option value="냉장고">냉장고</option>
+      <option value="주방소가전">주방소가전</option>
+      <option value="청소기">청소기</option>
+      <option value="계절가전">계절가전</option>
+      <option value="제습기·가습기">제습기·가습기</option>
+      <option value="PC주변기기">PC주변기기</option>
+      <option value="빔프로젝터">빔프로젝터</option>
+    </select>
+    <form @submit.prevent="handleSearch" class="search-form">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="제품명 검색"
+        v-model.trim="searchInput"
+      />
+      <button type="submit" class="text-button">검색</button>
+    </form>
+  </div>
+  <p v-if="filteredProducts.length === 0">검색 결과가 없습니다.</p>
+  <ul v-else>
+    <li v-for="product in filteredProducts" :key="product.id">
+      <ProductCard :product="product" />
+    </li>
+  </ul>
+</template>
+
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
 import { ref, computed, watch } from 'vue'
@@ -63,38 +95,6 @@ watch(
   { immediate: true },
 )
 </script>
-
-<template>
-  <h1>제품검색페이지</h1>
-  <div class="search-controls">
-    <select v-model="selectedCategory" class="category-select" @change="changeCategory">
-      <option value="">전체</option>
-      <option value="세탁·건조">세탁·건조</option>
-      <option value="냉장고">냉장고</option>
-      <option value="주방소가전">주방소가전</option>
-      <option value="청소기">청소기</option>
-      <option value="계절가전">계절가전</option>
-      <option value="제습기·가습기">제습기·가습기</option>
-      <option value="PC주변기기">PC주변기기</option>
-      <option value="빔프로젝터">빔프로젝터</option>
-    </select>
-    <form @submit.prevent="handleSearch" class="search-form">
-      <input
-        type="text"
-        class="search-input"
-        placeholder="제품명 검색"
-        v-model.trim="searchInput"
-      />
-      <button type="submit" class="text-button">검색</button>
-    </form>
-  </div>
-  <p v-if="filteredProducts.length === 0">검색 결과가 없습니다.</p>
-  <ul v-else>
-    <li v-for="product in filteredProducts" :key="product.id">
-      <ProductCard :product="product" />
-    </li>
-  </ul>
-</template>
 
 <style scoped>
 .search-controls {
