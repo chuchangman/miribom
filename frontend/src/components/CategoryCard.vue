@@ -1,3 +1,11 @@
+<template>
+  <div class="category-card" @click="goSearchCategory">
+    <!-- 나중에 아이콘 넣을때 다시 살릴 부분 -->
+    <!-- <img src="" :alt="props.category" /> -->
+    <h3>{{ props.category }}</h3>
+  </div>
+</template>
+
 <script setup>
 import { useRouter } from 'vue-router'
 
@@ -14,14 +22,6 @@ function goSearchCategory() {
   router.push({ name: 'ProductSearch', query: { category: props.category } })
 }
 </script>
-
-<template>
-  <div class="category-card" @click="goSearchCategory">
-    <!-- 나중에 아이콘 넣을때 다시 살릴 부분 -->
-    <!-- <img src="" :alt="props.category" /> -->
-    <h3>{{ props.category }}</h3>
-  </div>
-</template>
 
 <style scoped>
 .category-card {

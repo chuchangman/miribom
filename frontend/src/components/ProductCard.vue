@@ -1,3 +1,16 @@
+<template>
+  <div class="product-card" @click="getProductDetailPage(props.product.id)">
+    <button class="bookmark-button" type="button" @click.stop="toggleBookmark">
+      {{ isBookmarked ? '♥' : '♡' }}
+    </button>
+    <img :src="props.product.imageUrl" :alt="props.product.name" />
+    <h2>{{ props.product.name }}</h2>
+    <p>{{ props.product.brand }}</p>
+    <p>{{ props.product.price.toLocaleString() }}원</p>
+    <p>{{ props.product.category }}</p>
+  </div>
+</template>
+
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -20,18 +33,7 @@ const toggleBookmark = () => {
   isBookmarked.value = !isBookmarked.value
 }
 </script>
-<template>
-  <div class="product-card" @click="getProductDetailPage(props.product.id)">
-    <button class="bookmark-button" type="button" @click.stop="toggleBookmark">
-      {{ isBookmarked ? '♥' : '♡' }}
-    </button>
-    <img :src="props.product.imageUrl" :alt="props.product.name" />
-    <h2>{{ props.product.name }}</h2>
-    <p>{{ props.product.brand }}</p>
-    <p>{{ props.product.price.toLocaleString() }}원</p>
-    <p>{{ props.product.category }}</p>
-  </div>
-</template>
+
 <style scoped>
 .product-card {
   position: relative;

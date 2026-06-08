@@ -1,3 +1,38 @@
+<template>
+  <h1>로그인페이지</h1>
+  <form class="login-form" @submit.prevent="handleLogin">
+    <div>
+      <label for="email">이메일:</label>
+      <input
+        type="email"
+        id="email"
+        v-model.trim="email"
+        @blur="validateEmail"
+        @focus="removeEmailError"
+      />
+      <p class="error-message" v-if="emailErrorMessage">{{ emailErrorMessage }}</p>
+      <label for="password">비밀번호:</label>
+      <input
+        type="password"
+        id="password"
+        v-model.trim="password"
+        @blur="validatePassword"
+        @focus="removePasswordError"
+      />
+      <p class="error-message" v-if="passwordErrorMessage">{{ passwordErrorMessage }}</p>
+    </div>
+    <button id="login-btn" type="submit">로그인</button>
+  </form>
+  <RouterLink to="/signup" id="signup-link">계정이 없으신가요?</RouterLink><br />
+  <section>
+    <button id="google-login-btn" type="button" @click="oauthLogin('google')">
+      Google로 로그인
+    </button>
+    <button id="naver-login-btn" type="button" @click="oauthLogin('naver')">Naver로 로그인</button>
+    <button id="kakao-login-btn" type="button" @click="oauthLogin('kakao')">Kakao로 로그인</button>
+  </section>
+</template>
+
 <script setup>
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -77,7 +112,12 @@ const handleLogin = async () => {
       alert('로그인에 실패했습니다.')
       return
     }
-    await login()
+    const isAuthenticated = await login()
+    if (!isAuthenticated) {
+      alert('로그인 상태를 확인하지 못했습니다. 다시 시도해주세요.')
+      return
+    }
+
     alert('로그인성공')
     router.push('/')
   } catch {
@@ -89,41 +129,6 @@ const oauthLogin = (provider) => {
   window.location.href = `${AUTH_API_URL}/${provider}/`
 }
 </script>
-
-<template>
-  <h1>로그인페이지</h1>
-  <form class="login-form" @submit.prevent="handleLogin">
-    <div>
-      <label for="email">이메일:</label>
-      <input
-        type="email"
-        id="email"
-        v-model.trim="email"
-        @blur="validateEmail"
-        @focus="removeEmailError"
-      />
-      <p class="error-message" v-if="emailErrorMessage">{{ emailErrorMessage }}</p>
-      <label for="password">비밀번호:</label>
-      <input
-        type="password"
-        id="password"
-        v-model.trim="password"
-        @blur="validatePassword"
-        @focus="removePasswordError"
-      />
-      <p class="error-message" v-if="passwordErrorMessage">{{ passwordErrorMessage }}</p>
-    </div>
-    <button id="login-btn" type="submit">로그인</button>
-  </form>
-  <RouterLink to="/signup" id="signup-link">계정이 없으신가요?</RouterLink><br />
-  <section>
-    <button id="google-login-btn" type="button" @click="oauthLogin('google')">
-      Google로 로그인
-    </button>
-    <button id="naver-login-btn" type="button" @click="oauthLogin('naver')">Naver로 로그인</button>
-    <button id="kakao-login-btn" type="button" @click="oauthLogin('kakao')">Kakao로 로그인</button>
-  </section>
-</template>
 
 <style scoped>
 h1 {

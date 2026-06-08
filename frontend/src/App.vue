@@ -1,3 +1,15 @@
+<template>
+  <div class="app-layout">
+    <AppSidebar />
+    <main class="page-content">
+      <div class="page-header">
+        <AppHeaderActions />
+      </div>
+      <RouterView />
+    </main>
+  </div>
+</template>
+
 <script setup>
 import { RouterView } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
@@ -10,18 +22,6 @@ onMounted(async () => {
   await checkAuth()
 })
 </script>
-
-<template>
-  <div class="app-layout">
-    <AppSidebar />
-    <main class="page-content">
-      <div class="page-header">
-        <AppHeaderActions />
-      </div>
-      <RouterView />
-    </main>
-  </div>
-</template>
 
 <style scoped>
 .app-layout {

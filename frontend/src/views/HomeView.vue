@@ -1,20 +1,3 @@
-<script setup>
-import { useRouter, RouterLink } from 'vue-router'
-import { ref } from 'vue'
-import CategoryCard from '@/components/CategoryCard.vue'
-
-const router = useRouter()
-
-const searchQuery = ref('')
-
-function search() {
-  router.push({
-    name: 'ProductSearch',
-    query: searchQuery.value ? { search: searchQuery.value } : {},
-  })
-}
-</script>
-
 <template>
   <h1>구매 전, 실제 사용 영상으로 <span class="highlight">미리봄</span></h1>
   <h3>크기 · 작동음 · 공간 배치를 짧은 영상으로 확인하세요</h3>
@@ -44,6 +27,23 @@ function search() {
     </div>
   </div>
 </template>
+
+<script setup>
+import { useRouter, RouterLink } from 'vue-router'
+import { ref } from 'vue'
+import CategoryCard from '@/components/CategoryCard.vue'
+
+const router = useRouter()
+
+const searchQuery = ref('')
+
+function search() {
+  router.push({
+    name: 'ProductSearch',
+    query: searchQuery.value ? { search: searchQuery.value } : {},
+  })
+}
+</script>
 
 <style scoped>
 h1 {

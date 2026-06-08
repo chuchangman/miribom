@@ -1,34 +1,3 @@
-<script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-const housingType = ref('')
-const areaSize = ref(1)
-
-const housingTypeError = ref('')
-const areaSizeError = ref('')
-
-function saveLivingProfile() {
-  housingTypeError.value = ''
-  areaSizeError.value = ''
-
-  if (!housingType.value) {
-    housingTypeError.value = '주거형태를 선택해주세요.'
-  }
-
-  if (!areaSize.value || Number(areaSize.value) < 1) {
-    areaSizeError.value = '평수는 1 이상이어야 합니다.'
-  }
-
-  if (housingTypeError.value || areaSizeError.value) {
-    return
-  }
-
-  router.push('/')
-}
-</script>
-
 <template>
   <h1>당신의 생활환경을 입력해주세요.</h1>
   <h3>비슷한 환경의 자취생 후기를 우선 보여드려요</h3>
@@ -96,6 +65,37 @@ function saveLivingProfile() {
   <div v-if="housingTypeError" class="error-message">{{ housingTypeError }}</div>
   <div v-if="areaSizeError" class="error-message">{{ areaSizeError }}</div>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const housingType = ref('')
+const areaSize = ref(1)
+
+const housingTypeError = ref('')
+const areaSizeError = ref('')
+
+function saveLivingProfile() {
+  housingTypeError.value = ''
+  areaSizeError.value = ''
+
+  if (!housingType.value) {
+    housingTypeError.value = '주거형태를 선택해주세요.'
+  }
+
+  if (!areaSize.value || Number(areaSize.value) < 1) {
+    areaSizeError.value = '평수는 1 이상이어야 합니다.'
+  }
+
+  if (housingTypeError.value || areaSizeError.value) {
+    return
+  }
+
+  router.push('/mypage')
+}
+</script>
 
 <style scoped>
 .housing-options {

@@ -1,3 +1,56 @@
+<template>
+  <h1>회원가입페이지</h1>
+  <form @submit.prevent="signup" class="signup-form">
+    <label for="profile-img">프로필 이미지</label>
+    <img :src="previewImageUrl" alt="프로필 이미지 미리보기" class="profile-preview" />
+    <input
+      type="file"
+      accept="image/*"
+      name="profile-img"
+      id="profile-img"
+      @change="handleProfileImgChange"
+    />
+    <label for="nickname">닉네임</label>
+    <input
+      type="text"
+      id="nickname"
+      v-model.trim="nickname"
+      @focus="removeNicknameError"
+      @blur="validateNickname"
+    />
+    <p class="error-message" v-if="errorNickname">{{ errorNickname }}</p>
+    <label for="email">이메일</label>
+    <input
+      type="email"
+      id="email"
+      v-model.trim="email"
+      @focus="removeEmailError"
+      @blur="validateEmail"
+    />
+    <p class="error-message" v-if="errorEmail">{{ errorEmail }}</p>
+    <label for="password">비밀번호</label>
+    <input
+      type="password"
+      id="password"
+      v-model="password"
+      @focus="removePasswordError"
+      @blur="validatePassword"
+      @input="changePassword"
+    />
+    <p class="error-message" v-if="errorPassword">{{ errorPassword }}</p>
+    <label for="confirm-password">비밀번호 확인</label>
+    <input
+      type="password"
+      id="confirm-password"
+      v-model="confirmPassword"
+      @focus="removeConfirmPasswordError"
+      @blur="checkPasswordMatch"
+    />
+    <p class="error-message" v-if="errorConfirmPassword">{{ errorConfirmPassword }}</p>
+    <button type="submit" id="signup-btn">회원가입</button>
+  </form>
+</template>
+
 <script setup>
 import defaultProfile from '@/assets/images/default-profile.png'
 import { ref } from 'vue'
@@ -132,66 +185,19 @@ const signup = async () => {
       alert('요청 처리에 실패했습니다.')
       return
     }
-    await login()
+    const isAuthenticated = await login()
+    if (!isAuthenticated) {
+      alert('회원가입 후 로그인 상태를 확인하지 못했습니다. 다시 로그인해주세요.')
+      router.push('/login')
+      return
+    }
+
     router.push('/living-profile')
   } catch {
     alert('회원가입 실패')
   }
 }
 </script>
-
-<template>
-  <h1>회원가입페이지</h1>
-  <form @submit.prevent="signup" class="signup-form">
-    <label for="profile-img">프로필 이미지</label>
-    <img :src="previewImageUrl" alt="프로필 이미지 미리보기" class="profile-preview" />
-    <input
-      type="file"
-      accept="image/*"
-      name="profile-img"
-      id="profile-img"
-      @change="handleProfileImgChange"
-    />
-    <label for="nickname">닉네임</label>
-    <input
-      type="text"
-      id="nickname"
-      v-model.trim="nickname"
-      @focus="removeNicknameError"
-      @blur="validateNickname"
-    />
-    <p class="error-message" v-if="errorNickname">{{ errorNickname }}</p>
-    <label for="email">이메일</label>
-    <input
-      type="email"
-      id="email"
-      v-model.trim="email"
-      @focus="removeEmailError"
-      @blur="validateEmail"
-    />
-    <p class="error-message" v-if="errorEmail">{{ errorEmail }}</p>
-    <label for="password">비밀번호</label>
-    <input
-      type="password"
-      id="password"
-      v-model="password"
-      @focus="removePasswordError"
-      @blur="validatePassword"
-      @input="changePassword"
-    />
-    <p class="error-message" v-if="errorPassword">{{ errorPassword }}</p>
-    <label for="confirm-password">비밀번호 확인</label>
-    <input
-      type="password"
-      id="confirm-password"
-      v-model="confirmPassword"
-      @focus="removeConfirmPasswordError"
-      @blur="checkPasswordMatch"
-    />
-    <p class="error-message" v-if="errorConfirmPassword">{{ errorConfirmPassword }}</p>
-    <button type="submit" id="signup-btn">회원가입</button>
-  </form>
-</template>
 
 <style scoped>
 .signup-form {

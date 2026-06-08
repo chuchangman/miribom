@@ -1,3 +1,35 @@
+<template>
+  <h1>쇼츠페이지</h1>
+  <p v-if="!video">등록된 영상 후기가 없습니다.</p>
+  <section class="shorts-layout" v-else>
+    <div class="video-area" @wheel.prevent="handleWheel">
+      <div class="video-frame">
+        <img :src="video.thumbnailUrl" :alt="video.productName" />
+      </div>
+      <div class="video-actions">
+        <button type="button" @click="goPrevVideo">이전</button>
+        <button type="button" @click="goNextVideo">다음</button>
+        <p class="like-count">좋아요 : {{ video.likeCount }}개</p>
+        <button type="button" @click="toggleLiked">{{ video.isLiked ? '♥' : '♡' }}</button>
+        <p>{{ currentIndex + 1 }} / {{ videos.length }}</p>
+      </div>
+    </div>
+    <div class="video-info">
+      <div class="product-info" @click="goProductDetail(video.productId)">
+        <p>제품명 : {{ video.productName }}</p>
+        <p>제조사 : {{ video.productBrand }}</p>
+        <p>카테고리 : {{ video.category }}</p>
+      </div>
+      <div class="review-info">
+        <p>평점 : {{ video.rating }} / 5</p>
+        <p>작성자 : {{ video.userNickname }}</p>
+        <p>작성자 정보 : {{ video.userHousingType }} / {{ video.userAreaSize }}평</p>
+        <p>후기내용 : {{ video.reviewContent }}</p>
+      </div>
+    </div>
+  </section>
+</template>
+
 <script setup>
 import mockVideos from '@/data/mockVideos'
 import { ref, computed } from 'vue'
@@ -44,7 +76,7 @@ const handleWheel = (event) => {
   isScrolling.value = true
   setTimeout(() => {
     isScrolling.value = false
-  }, 1000)
+  }, 500)
 }
 const goNextVideo = () => {
   currentIndex.value = (currentIndex.value + 1) % videos.value.length
@@ -56,38 +88,6 @@ const goProductDetail = (productId) => {
   router.push(`/products/${productId}`)
 }
 </script>
-
-<template>
-  <h1>쇼츠페이지</h1>
-  <p v-if="!video">등록된 영상 후기가 없습니다.</p>
-  <section class="shorts-layout" v-else>
-    <div class="video-area" @wheel.prevent="handleWheel">
-      <div class="video-frame">
-        <img :src="video.thumbnailUrl" :alt="video.productName" />
-      </div>
-      <div class="video-actions">
-        <button type="button" @click="goPrevVideo">이전</button>
-        <button type="button" @click="goNextVideo">다음</button>
-        <p class="like-count">좋아요 : {{ video.likeCount }}개</p>
-        <button type="button" @click="toggleLiked">{{ video.isLiked ? '♥' : '♡' }}</button>
-        <p>{{ currentIndex + 1 }} / {{ videos.length }}</p>
-      </div>
-    </div>
-    <div class="video-info">
-      <div class="product-info" @click="goProductDetail(video.productId)">
-        <p>제품명 : {{ video.productName }}</p>
-        <p>제조사 : {{ video.productBrand }}</p>
-        <p>카테고리 : {{ video.category }}</p>
-      </div>
-      <div class="review-info">
-        <p>평점 : {{ video.rating }} / 5</p>
-        <p>작성자 : {{ video.userNickname }}</p>
-        <p>작성자 정보 : {{ video.userHousingType }} / {{ video.userAreaSize }}평</p>
-        <p>후기내용 : {{ video.reviewContent }}</p>
-      </div>
-    </div>
-  </section>
-</template>
 
 <style scoped>
 .shorts-layout {

@@ -1,16 +1,3 @@
-<script setup>
-import { RouterLink, useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
-
-const router = useRouter()
-const { isLogin, logout } = useAuth()
-
-const handleLogout = () => {
-  logout()
-  router.push('/login')
-}
-</script>
-
 <template>
   <nav>
     <div class="login-actions" v-if="isLogin">
@@ -23,6 +10,25 @@ const handleLogout = () => {
     </div>
   </nav>
 </template>
+
+<script setup>
+import { RouterLink, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
+
+const router = useRouter()
+const { isLogin, logout } = useAuth()
+
+const handleLogout = async () => {
+  const isLoggedOut = await logout()
+
+  if (!isLoggedOut) {
+    alert('로그아웃에 실패했습니다. 다시 시도해주세요.')
+    return
+  }
+
+  router.push('/login')
+}
+</script>
 
 <style scoped>
 .login-actions,
@@ -41,6 +47,7 @@ const handleLogout = () => {
   background-color: white;
   border: 0;
   color: #333;
+  font: inherit;
   font-weight: 500;
   cursor: pointer;
 }
