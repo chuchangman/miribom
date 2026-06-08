@@ -5,13 +5,13 @@
     <section class="profile-card">
       <img
         class="profile-image"
-        :src="mockUser.profileImageUrl || defaultProfile"
+        :src="defaultProfile"
         alt="프로필 이미지"
       />
 
       <div class="profile-info">
-        <h2>{{ mockUser.nickname }}</h2>
-        <p>{{ mockUser.email }}</p>
+        <h2>{{ user?.nickname || '사용자 정보 없음' }}</h2>
+        <p>이메일 정보는 아직 제공되지 않습니다.</p>
       </div>
 
       <button type="button" class="text-button" @click="goProfileEdit">프로필 편집</button>
@@ -19,17 +19,17 @@
 
     <section class="summary-grid">
       <article class="summary-card">
-        <strong>{{ mockUser.uploadedVideoCount }}</strong>
+        <strong>-</strong>
         <p>내가 올린 영상</p>
       </article>
 
       <article class="summary-card">
-        <strong>{{ mockUser.likedVideoCount }}</strong>
+        <strong>-</strong>
         <p>좋아요한 영상</p>
       </article>
 
       <article class="summary-card">
-        <strong>{{ mockUser.favoriteProductCount }}</strong>
+        <strong>-</strong>
         <p>즐겨찾기 제품</p>
       </article>
     </section>
@@ -37,7 +37,7 @@
     <section class="living-card">
       <div>
         <h2>내 생활환경</h2>
-        <p>{{ mockUser.housingType }} · {{ mockUser.areaSize }}평</p>
+        <p>생활환경 정보 API 연결 예정</p>
         <small>비슷한 공간에서 사용한 전자제품 후기를 우선 확인할 수 있습니다.</small>
       </div>
 
@@ -56,7 +56,7 @@
     <section class="settings-list">
       <button type="button">비밀번호 변경</button>
       <button type="button">알림 설정</button>
-      <button type="button">로그아웃</button>
+      <button type="button" @click="handleLogout">로그아웃</button>
       <button type="button" class="danger">회원 탈퇴</button>
     </section>
   </section>
@@ -65,19 +65,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import defaultProfile from '@/assets/images/default-profile.png'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-
-const mockUser = {
-  nickname: '미리봄 사용자',
-  email: 'user@example.com',
-  profileImageUrl: '',
-  housingType: '원룸',
-  areaSize: 7,
-  uploadedVideoCount: 0,
-  likedVideoCount: 0,
-  favoriteProductCount: 4,
-}
+const { user, logout } = useAuth()
 
 const goProfileEdit = () => {
   router.push('/profile-edit')
@@ -85,6 +76,17 @@ const goProfileEdit = () => {
 
 const goLivingProfile = () => {
   router.push('/living-profile')
+}
+
+const handleLogout = async () => {
+  const isLoggedOut = await logout()
+
+  if (!isLoggedOut) {
+    alert('로그아웃에 실패했습니다. 다시 시도해주세요.')
+    return
+  }
+
+  router.push('/login')
 }
 </script>
 

@@ -27,12 +27,26 @@ export const useAuth = () => {
   }
 
   const login = async () => {
-    await checkAuth()
+    return await checkAuth()
   }
 
-  const logout = () => {
-    isLogin.value = false
-    user.value = null
+  const logout = async () => {
+    try {
+      const response = await fetch(`${AUTH_API_URL}/logout/`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        return false
+      }
+
+      isLogin.value = false
+      user.value = null
+      return true
+    } catch (error) {
+      return false
+    }
   }
 
   return {

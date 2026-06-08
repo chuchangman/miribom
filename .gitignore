@@ -14,3 +14,7 @@ Thumbs.db
 
 # ── Claude Code 내부 ─────────────────────────────────────────────────────────
 .claude/
+
+# Local Codex context
+/AGENTS.md
+/docs/

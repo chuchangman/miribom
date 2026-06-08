@@ -16,14 +16,13 @@ const favoriteProducts = mockProducts.slice(0, 4)
 
 <style scoped>
 ul {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
   list-style: none;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
 }
 li {
-  margin-bottom: 16px;
-  width: calc(25% - 16px);
-  margin-right: 16px;
+  min-width: 0;
 }
 </style>

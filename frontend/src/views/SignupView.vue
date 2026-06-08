@@ -185,7 +185,13 @@ const signup = async () => {
       alert('요청 처리에 실패했습니다.')
       return
     }
-    await login()
+    const isAuthenticated = await login()
+    if (!isAuthenticated) {
+      alert('회원가입 후 로그인 상태를 확인하지 못했습니다. 다시 로그인해주세요.')
+      router.push('/login')
+      return
+    }
+
     router.push('/living-profile')
   } catch {
     alert('회원가입 실패')

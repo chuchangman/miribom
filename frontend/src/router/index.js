@@ -10,27 +10,67 @@ import ProfileEditView from '@/views/ProfileEditView.vue'
 import ReviewCreateView from '@/views/ReviewCreateView.vue'
 import ShortsView from '@/views/ShortsView.vue'
 import SignupView from '@/views/SignupView.vue'
+import { useAuth } from '@/composables/useAuth'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
-  { path: '/login', name: 'Login', component: LoginView },
-  { path: '/signup', name: 'Signup', component: SignupView },
+  { path: '/login', name: 'Login', component: LoginView, meta: { guestOnly: true } },
+  { path: '/signup', name: 'Signup', component: SignupView, meta: { guestOnly: true } },
   { path: '/products', name: 'ProductSearch', component: ProductSearchView },
   { path: '/products/:id', name: 'ProductDetail', component: ProductDetailView },
-  { path: '/living-profile', name: 'LivingProfile', component: LivingProfileView },
+  {
+    path: '/living-profile',
+    name: 'LivingProfile',
+    component: LivingProfileView,
+    meta: { requiresAuth: true },
+  },
   { path: '/shorts', name: 'Shorts', component: ShortsView },
-  { path: '/mypage', name: 'MyPage', component: MyPageView },
-  { path: '/favorites', name: 'Favorite', component: FavoriteView },
-  { path: '/likes', name: 'Liked', component: LikedView },
-  { path: '/profile-edit', name: 'ProfileEdit', component: ProfileEditView },
-  { path: '/review', name: 'ReviewCreate', component: ReviewCreateView },
+  { path: '/mypage', name: 'MyPage', component: MyPageView, meta: { requiresAuth: true } },
+  {
+    path: '/favorites',
+    name: 'Favorite',
+    component: FavoriteView,
+    meta: { requiresAuth: true },
+  },
+  { path: '/likes', name: 'Liked', component: LikedView, meta: { requiresAuth: true } },
+  {
+    path: '/profile-edit',
+    name: 'ProfileEdit',
+    component: ProfileEditView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/review',
+    name: 'ReviewCreate',
+    component: ReviewCreateView,
+    meta: { requiresAuth: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth && !to.meta.guestOnly) {
+    return true
+  }
+
+  const { checkAuth } = useAuth()
+  const isAuthenticated = await checkAuth()
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return { name: 'Login' }
+  }
+
+  if (to.meta.guestOnly && isAuthenticated) {
+    return { name: 'Home' }
+  }
+
+  return true
 })
 
 export default router

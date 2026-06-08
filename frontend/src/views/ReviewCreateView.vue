@@ -30,7 +30,13 @@
         </div>
         <div class="review-product">
           <label for="review-product">제품 선택</label>
-          <input type="text" name="review-product" id="review-product" v-model="productSearchQuery">
+          <input
+            type="text"
+            name="review-product"
+            id="review-product"
+            v-model="productSearchQuery"
+            @input="handleProductSearchInput"
+          />
           <p v-if="productErrorMessage" class="error-message">{{ productErrorMessage }}</p>
           <p v-else-if="!selectedProduct">선택된 제품이 없습니다.</p>
           <p v-else>선택된 제품: {{ selectedProduct.name }}</p>
@@ -155,10 +161,19 @@ const submitReview = () => {
 const uploadVideo = (event) => {
   const video = event.target.files[0]
   if (!video) {
+    inputVideo.value = null
     videoErrorMessage.value = '영상을 선택해주세요.'
     return
   }
+
   inputVideo.value = video
+  videoErrorMessage.value = ''
+}
+
+const handleProductSearchInput = () => {
+  if (selectedProduct.value) {
+    selectedProduct.value = null
+  }
 }
 
 const filteredProduct = computed(() => {

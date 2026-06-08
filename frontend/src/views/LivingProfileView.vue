@@ -93,7 +93,7 @@ function saveLivingProfile() {
     return
   }
 
-  router.push('/')
+  router.push('/mypage')
 }
 </script>
 

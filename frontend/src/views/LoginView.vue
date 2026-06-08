@@ -112,7 +112,12 @@ const handleLogin = async () => {
       alert('로그인에 실패했습니다.')
       return
     }
-    await login()
+    const isAuthenticated = await login()
+    if (!isAuthenticated) {
+      alert('로그인 상태를 확인하지 못했습니다. 다시 시도해주세요.')
+      return
+    }
+
     alert('로그인성공')
     router.push('/')
   } catch {
