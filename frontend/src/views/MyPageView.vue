@@ -56,7 +56,9 @@
     <section class="settings-list">
       <button type="button">비밀번호 변경</button>
       <button type="button">알림 설정</button>
-      <button type="button" @click="handleLogout">로그아웃</button>
+      <button type="button" :disabled="isLoggingOut" @click="handleLogout">
+        {{ isLoggingOut ? '로그아웃 중...' : '로그아웃' }}
+      </button>
       <button type="button" class="danger">회원 탈퇴</button>
     </section>
   </section>
@@ -66,9 +68,11 @@
 import { useRouter } from 'vue-router'
 import defaultProfile from '@/assets/images/default-profile.png'
 import { useAuth } from '@/composables/useAuth'
+import { ref } from 'vue'
 
 const router = useRouter()
 const { user, logout } = useAuth()
+const isLoggingOut = ref(false)
 
 const goProfileEdit = () => {
   router.push('/profile-edit')
@@ -79,14 +83,24 @@ const goLivingProfile = () => {
 }
 
 const handleLogout = async () => {
-  const isLoggedOut = await logout()
-
-  if (!isLoggedOut) {
-    alert('로그아웃에 실패했습니다. 다시 시도해주세요.')
+  if (isLoggingOut.value) {
     return
   }
 
-  router.push('/login')
+  isLoggingOut.value = true
+
+  try {
+    const isLoggedOut = await logout()
+
+    if (!isLoggedOut) {
+      alert('로그아웃에 실패했습니다. 다시 시도해주세요.')
+      return
+    }
+
+    router.push('/login')
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 </script>
 
@@ -207,6 +221,11 @@ const handleLogout = async () => {
 
 .settings-list button:last-child {
   border-bottom: none;
+}
+
+.settings-list button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .text-button {
