@@ -10,6 +10,10 @@ class User(models.Model):
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
 
+    @property
+    def is_authenticated(self):
+        return True
+
 class SocialUser(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     oauth_provider = models.CharField(max_length=20, null=False)

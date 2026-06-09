@@ -71,6 +71,8 @@ def _get_or_create_social_user(provider, oauth_id, email, nickname):
 # ── 이메일 회원가입 / 로그인 ─────────────────────────────────────────────
 
 class SignupView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if not serializer.is_valid():
@@ -92,6 +94,8 @@ class SignupView(APIView):
 
 
 class EmailLoginView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
@@ -120,6 +124,8 @@ class LogoutView(APIView):
 
 
 class CookieTokenRefreshView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
         if not refresh_token:
