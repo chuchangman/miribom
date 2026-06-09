@@ -143,20 +143,13 @@ CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.CookieJWTAuthentication',
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Miribom API',
-    'DESCRIPTION': '미리봄 서비스 API 문서',
+    'DESCRIPTION': '미리봄 서비스 API 문서 (인증: HttpOnly Cookie 기반 JWT)',
     'VERSION': '1.0.0',
-    'SECURITY': [{'BearerAuth': []}],
-    'COMPONENTS': {
-        'securitySchemes': {
-            'BearerAuth': {
-                'type': 'http',
-                'scheme': 'bearer',
-                'bearerFormat': 'JWT',
-            }
-        }
-    },
 }

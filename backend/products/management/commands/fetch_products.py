@@ -70,7 +70,7 @@ class Command(BaseCommand):
                     updated_count += 1
 
             self.stdout.write(self.style.SUCCESS(
-                f'  완료 — 신규: {created_count}개, 업데이트: {updated_count}개'
+                f'  완료 - 신규: {created_count}개, 업데이트: {updated_count}개'
             ))
 
         self.stdout.write(self.style.SUCCESS('모든 카테고리 수집 완료'))
