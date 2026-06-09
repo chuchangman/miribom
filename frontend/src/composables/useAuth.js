@@ -1,33 +1,87 @@
 import { ref } from 'vue'
 import { AUTH_API_URL } from '@/config/api'
+
 const isLogin = ref(false)
 const user = ref(null)
+const isAuthInitialized = ref(false)
+let authCheckPromise = null
 
 export const useAuth = () => {
-  const checkAuth = async () => {
+  const resetAuth = () => {
+    isLogin.value = false
+    user.value = null
+  }
+
+  const requestMe = () => {
+    return fetch(`${AUTH_API_URL}/me/`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+  }
+
+  const refreshAccessToken = async () => {
     try {
-      const response = await fetch(`${AUTH_API_URL}/me/`, {
-        method: 'GET',
+      const response = await fetch(`${AUTH_API_URL}/refresh/`, {
+        method: 'POST',
         credentials: 'include',
       })
-      const data = await response.json()
-      if (!response.ok) {
-        isLogin.value = false
-        user.value = null
-        return false
-      }
-      isLogin.value = true
-      user.value = data
-      return true
+
+      return response.ok
     } catch (error) {
-      isLogin.value = false
-      user.value = null
       return false
     }
   }
 
+  const performAuthCheck = async () => {
+    try {
+      let response = await requestMe()
+
+      if (response.status === 401) {
+        const isRefreshed = await refreshAccessToken()
+
+        if (!isRefreshed) {
+          resetAuth()
+          return false
+        }
+
+        response = await requestMe()
+      }
+
+      if (!response.ok) {
+        resetAuth()
+        return false
+      }
+
+      const data = await response.json()
+      isLogin.value = true
+      user.value = data
+      return true
+    } catch (error) {
+      resetAuth()
+      return false
+    } finally {
+      isAuthInitialized.value = true
+    }
+  }
+
+  const checkAuth = (force = false) => {
+    if (authCheckPromise) {
+      return authCheckPromise
+    }
+
+    if (isAuthInitialized.value && !force) {
+      return Promise.resolve(isLogin.value)
+    }
+
+    authCheckPromise = performAuthCheck().finally(() => {
+      authCheckPromise = null
+    })
+
+    return authCheckPromise
+  }
+
   const login = async () => {
-    return await checkAuth()
+    return await checkAuth(true)
   }
 
   const logout = async () => {
@@ -41,8 +95,8 @@ export const useAuth = () => {
         return false
       }
 
-      isLogin.value = false
-      user.value = null
+      resetAuth()
+      isAuthInitialized.value = true
       return true
     } catch (error) {
       return false
@@ -52,6 +106,7 @@ export const useAuth = () => {
   return {
     checkAuth,
     isLogin,
+    isAuthInitialized,
     user,
     login,
     logout,

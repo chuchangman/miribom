@@ -21,7 +21,9 @@
       />
       <p class="error-message" v-if="passwordErrorMessage">{{ passwordErrorMessage }}</p>
     </div>
-    <button id="login-btn" type="submit">로그인</button>
+    <button id="login-btn" type="submit" :disabled="isSubmitting">
+      {{ isSubmitting ? '로그인 중...' : '로그인' }}
+    </button>
   </form>
   <RouterLink to="/signup" id="signup-link">계정이 없으신가요?</RouterLink><br />
   <section>
@@ -45,6 +47,7 @@ const email = ref('')
 const password = ref('')
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
+const isSubmitting = ref(false)
 
 const validateEmail = () => {
   if (!email.value) {
@@ -77,6 +80,10 @@ const removePasswordError = () => {
 }
 
 const handleLogin = async () => {
+  if (isSubmitting.value) {
+    return
+  }
+
   const validEmail = validateEmail()
   const validPassword = validatePassword()
 
@@ -84,6 +91,9 @@ const handleLogin = async () => {
     alert('로그인 실패! 입력한 정보를 확인해주세요.')
     return
   }
+
+  isSubmitting.value = true
+
   try {
     const response = await fetch(`${AUTH_API_URL}/login/`, {
       method: 'POST',
@@ -122,6 +132,8 @@ const handleLogin = async () => {
     router.push('/')
   } catch {
     alert('이메일 또는 비밀번호가 올바르지 않습니다.')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -162,6 +174,10 @@ h1 {
 }
 #login-btn:hover {
   background-color: #007bb5;
+}
+#login-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 .error-message {
   margin-top: -10px;
