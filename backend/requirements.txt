@@ -2,10 +2,14 @@ asgiref==3.11.1
 attrs==26.1.0
 certifi==2026.5.20
 charset-normalizer==3.4.7
+dj-rest-auth==7.2.0
 Django==5.2.14
+django-allauth==65.17.0
 django-cors-headers==4.9.0
+django-environ==0.13.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
+dotenv==0.9.9
 drf-spectacular==0.29.0
 idna==3.15
 inflection==0.5.1
@@ -19,5 +23,6 @@ requests==2.34.2
 rpds-py==2026.5.1
 sqlparse==0.5.5
 typing_extensions==4.15.0
+tzdata==2026.2
 uritemplate==4.2.0
 urllib3==2.7.0

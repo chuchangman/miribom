@@ -412,3 +412,98 @@
   - 이후 external test를 추가 수집할 때는 이미지 검색 결과를 그대로 쓰지 않고 검수 단계를 유지한다.
   - 경계 케이스는 라벨 정책으로 관리한다.
   - 실제 사용자 업로드 이미지가 쌓이면 오답을 별도로 수집해 추가 검증한다.
+
+### v3 Phase 3 - 18-class 확장 학습 (baseline)
+
+- 한 일:
+  - `refrigerator / washer_dryer / wash_tower` 3-class 구조에서 15개 클래스를 추가해 18-class 구조로 확장했다.
+  - 추가 클래스: `rice_cooker`, `microwave`, `air_fryer`, `electric_kettle`, `vacuum_cleaner`, `robot_vacuum`, `fan`, `air_conditioner`, `heater`, `dehumidifier`, `humidifier`, `monitor`, `keyboard`, `mouse`, `beam_projector`
+  - 네이버쇼핑 API로 클래스별 이미지를 수집하고 Gemini API로 자동 검수한 뒤 처리 기준에 맞는 이미지만 processed에 반영했다.
+  - 수집 → 검수 → 승인 파이프라인을 스크립트화했다 (`run_collection.py`, `approve_staging_gemini.py`).
+  - `run_split.py`로 4,444장을 stratified split하고 EfficientNetV2-S를 Phase 1(backbone freeze) → Phase 2(features.6/7/classifier unfreeze) 순서로 학습했다.
+  - `SERVICE_LABEL_MAP`을 18-class 기준으로 확장해 세부 라벨 8개 서비스 카테고리로 매핑했다.
+
+- 선택한 방식:
+  - 기존 3-class checkpoint를 재사용하지 않고 18-class를 처음부터 학습했다.
+  - WeightedRandomSampler로 클래스 불균형을 보정했다.
+  - ReduceLROnPlateau(patience=3, factor=0.5)로 학습률을 자동 조정했다.
+  - 크래시 복구를 위해 매 에폭 `last.pth`를 별도 저장했다.
+
+- 결과:
+  - 전체 processed: 4,444장
+  - split: train 3,551 / valid 444 / test 449
+  - baseline best: epoch 7, val_acc 94.36% (`phase3_18class_resumed_best.pth`)
+  - test 세부 라벨 acc: **92.6%** (415/449)
+  - test 서비스 acc: **95.8%** (430/449)
+
+- 분석:
+  - `beam_projector → heater`, `humidifier → electric_kettle`, `heater → beam_projector` 방향 오답이 주요 병목이었다.
+  - heater 데이터가 기본 형태 위주로만 구성되어 다이슨 타워형 같은 비정형 히터를 beam_projector로 혼동하는 경향이 있었다.
+  - humidifier는 원통형 제품이 전기포트·밥솥과 외형 유사성이 높아 서비스 오답이 발생했다.
+
+- 다음 작업:
+  - beam_projector 오염 이미지 15장을 제거한다.
+  - humidifier/heater 형태 다양성 보강을 위해 신규 검색어로 추가 수집 후 Gemini 검수를 진행한다.
+  - 보강 후 split 재생성 및 Phase 2 fine-tuning을 재개한다.
+
+### v3 Phase 3-1 - 데이터 정제 및 보강 (beam_projector / humidifier / heater)
+
+- 한 일:
+  - `beam_projector` 학습 데이터에서 오분류 원인 이미지 15장을 제거했다.
+    - `wrong_product` 7장, `ambiguous_product` 6장, `bad_input` 1장, `text_image` 1장
+    - 제거 이미지는 `data/rejected/beam_projector/{reason}/`으로 이동하고 로그를 기록했다.
+  - `humidifier` 신규 검색어 4개 추가: 가열식/타워형/원통형/대용량 가습기.
+  - `heater` 신규 검색어 4개 추가: 타워형/다이슨/소형 전기/라디에이터 히터.
+  - 기존 `*_제품사진` 쿼리 9개 클래스 전면 제거 (이미지 품질 불량 확인).
+  - 추가 수집한 humidifier/heater 이미지를 Gemini API로 검수해 OK 이미지만 processed에 반영했다.
+    - humidifier: OK 13장 추가 (`naver_0323` ~ `naver_0335`)
+    - heater: OK 77장 추가 (`naver_0181` ~ `naver_0257`)
+  - `run_split.py`로 split을 재생성했다.
+
+- 결과:
+  - beam_projector: 305장 → 290장 (-15)
+  - humidifier: 323장 → 336장 (+13)
+  - heater: 181장 → 258장 (+77)
+  - 전체 processed: 4,701장
+  - split 재생성: train 3,754 / valid 470 / test 477
+
+- 다음 작업:
+  - 보강된 split 기준으로 Phase 2 fine-tuning을 재개한다.
+  - 기존 baseline checkpoint(`phase3_18class_resumed_best.pth`)에서 시작한다.
+
+### v3 Phase 3-2 Refined - 18-class Fine-tuning 재개 (최종 서비스 모델)
+
+- 한 일:
+  - beam_projector 정제 + humidifier/heater 보강 후 새로운 split(4,701장)에서 Phase 2 fine-tuning을 재개했다.
+  - 입력 checkpoint: `phase3_18class_resumed_best.pth` (epoch 7, val_acc 94.36%)
+  - `features.6`, `features.7`, `classifier` 레이어 unfreeze, Adam lr=1e-4 fresh 적용.
+  - 10 에폭 학습, 매 에폭 `phase3_18class_refined_last.pth` 저장, val_loss 개선 시 `phase3_18class_refined_best.pth` 갱신.
+  - 학습 완료 후 test 평가 및 baseline 비교 분석을 수행했다.
+  - 최종 모델을 `phase3_18class_service_best.pth`로 복사해 API/CLI 기준 checkpoint로 고정했다.
+
+- 결과:
+  - best epoch: 8 / val_loss 0.1303 / val_acc 95.96%
+  - **test 세부 라벨 acc: 94.8%** (452/477) — baseline 대비 +2.2%
+  - **test 서비스 acc: 97.7%** (466/477) — baseline 대비 +1.9%
+  - low confidence (< 0.70): 22건 → 16건 (-6건)
+
+  | 클래스 | baseline | refined | 변화 |
+  |---|---|---|---|
+  | humidifier | 75.8% | **94.1%** | +18.4% |
+  | heater | 84.2% | **100.0%** | +15.8% |
+  | beam_projector | 96.8% | **100.0%** | +3.2% |
+  | dehumidifier | 91.3% | 82.6% | -8.7% |
+  | wash_tower | 85.7% | 81.0% | -4.8% |
+
+- 분석:
+  - humidifier/heater 보강 수집과 beam_projector 오염 이미지 제거 효과가 세부 라벨 정확도에 직접적으로 반영됐다.
+  - `wash_tower ↔ washer_dryer` 혼동 9건이 가장 큰 오답 패턴이나, 서비스 기준으로는 같은 `washing_drying`이므로 실질 오답이 아니다.
+  - `dehumidifier` 세부 정확도 하락(-8.7%)은 heater/beam_projector와의 혼동 패턴이나, 서비스 오답은 3건으로 제한적이다.
+  - 서비스 acc 97.7%는 실서비스 기준 충분한 수준으로 판단해 추가 학습 없이 최종 모델로 고정했다.
+
+- 최종 체크포인트:
+  - `checkpoints/phase3_18class_service_best.pth` (epoch 8, val_acc 95.96%, val_loss 0.1303, 18-class)
+
+- 다음 작업:
+  - dehumidifier 세부 정확도 보강이 필요하다면 새 검색어로 데이터를 수집하고 재학습한다.
+  - 실제 사용자 업로드 이미지로 external test를 구성해 18-class 서비스 정확도를 검증한다.
