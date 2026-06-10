@@ -15,6 +15,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         display = options['display']
+        if not (1 <= display <= 100):
+            raise SystemExit('오류: --display는 1~100 사이의 값이어야 합니다.')
         headers = {
             'X-Naver-Client-Id': settings.NAVER_CLIENT_ID,
             'X-Naver-Client-Secret': settings.NAVER_CLIENT_SECRET,
