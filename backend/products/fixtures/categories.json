@@ -1,0 +1,82 @@
+[
+  {
+    "model": "products.category",
+    "pk": 1,
+    "fields": {
+      "name": "세탁·건조",
+      "slug": "washer-dryer",
+      "ai_label": "washer_dryer",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 2,
+    "fields": {
+      "name": "냉장고",
+      "slug": "refrigerator",
+      "ai_label": "refrigerator",
+      "display_order": 2
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 3,
+    "fields": {
+      "name": "주방소가전",
+      "slug": "kitchen-appliance",
+      "ai_label": "kitchen_appliance",
+      "display_order": 3
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 4,
+    "fields": {
+      "name": "청소기",
+      "slug": "vacuum",
+      "ai_label": "vacuum_cleaner",
+      "display_order": 4
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 5,
+    "fields": {
+      "name": "계절가전",
+      "slug": "seasonal",
+      "ai_label": "seasonal_appliance",
+      "display_order": 5
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 6,
+    "fields": {
+      "name": "제습기·가습기",
+      "slug": "dehumidifier-humidifier",
+      "ai_label": "dehumidifier_humidifier",
+      "display_order": 6
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 7,
+    "fields": {
+      "name": "PC주변기기",
+      "slug": "pc-peripheral",
+      "ai_label": "pc_peripheral",
+      "display_order": 7
+    }
+  },
+  {
+    "model": "products.category",
+    "pk": 8,
+    "fields": {
+      "name": "빔프로젝터",
+      "slug": "projector",
+      "ai_label": "projector",
+      "display_order": 8
+    }
+  }
+]

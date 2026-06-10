@@ -17,6 +17,17 @@ import os
 load_dotenv()
 
 NAVER_CLIENT_ID = os.getenv('NAVER_CLIENT_ID')
+NAVER_CLIENT_SECRET = os.getenv('NAVER_CLIENT_SECRET')
+
+R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID')
+R2_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
+R2_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
+R2_BUCKET_NAME = os.getenv('R2_BUCKET_NAME')
+R2_ENDPOINT_URL = f"https://{os.getenv('R2_ACCOUNT_ID', '')}.r2.cloudflarestorage.com"
+R2_PUBLIC_URL = os.getenv('R2_PUBLIC_URL')  # e.g. https://pub-xxx.r2.dev
+
+VIDEO_MAX_SIZE_BYTES = 500 * 1024 * 1024  # 500MB
+VIDEO_ALLOWED_CONTENT_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,12 +37,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_^vkhk+b#t2kermsq@4zuuq06ja9lcj0o)is%f*h=nb$4i+ljd'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -43,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'drf_spectacular',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -138,3 +150,26 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.CookieJWTAuthentication',
+    ],
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Miribom API',
+    'DESCRIPTION': '미리봄 서비스 API 문서 (인증: HttpOnly Cookie 기반 JWT)',
+    'VERSION': '1.0.0',
+    'SECURITY': [{'cookieAuth': []}],
+    'COMPONENTS': {
+        'securitySchemes': {
+            'cookieAuth': {
+                'type': 'apiKey',
+                'in': 'cookie',
+                'name': 'access_token',
+            }
+        }
+    },
+}

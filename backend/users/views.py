@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
+from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
 from .serializers import SignupSerializer, LoginSerializer
 
@@ -71,6 +72,9 @@ def _get_or_create_social_user(provider, oauth_id, email, nickname):
 # ── 이메일 회원가입 / 로그인 ─────────────────────────────────────────────
 
 class SignupView(APIView):
+    authentication_classes = []
+
+    @extend_schema(request=SignupSerializer, responses={200: None, 400: None, 409: None}, summary='이메일 회원가입')
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if not serializer.is_valid():
@@ -92,13 +96,16 @@ class SignupView(APIView):
 
 
 class EmailLoginView(APIView):
+    authentication_classes = []
+
+    @extend_schema(request=LoginSerializer, responses={200: None, 400: None, 401: None}, summary='이메일 로그인')
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
-        email_user = EmailUser.objects.filter(email=data['email']).first()
+        email_user = EmailUser.objects.select_related('user_id').filter(email=data['email']).first()
 
         if not email_user or not check_password(data['password'], email_user.password):
             return Response(
@@ -106,12 +113,17 @@ class EmailLoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        if email_user.user_id.is_deleted:
+            return Response({'error': '탈퇴한 계정입니다.'}, status=status.HTTP_403_FORBIDDEN)
+
         return _issue_jwt(email_user.user_id)
 
 
 # ── 로그아웃 / 토큰 갱신 ────────────────────────────────────────────────
 
 class LogoutView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         response.delete_cookie('access_token')
@@ -120,6 +132,8 @@ class LogoutView(APIView):
 
 
 class CookieTokenRefreshView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
         if not refresh_token:
