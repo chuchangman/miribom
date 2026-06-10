@@ -13,7 +13,7 @@ class CookieJWTAuthentication(BaseAuthentication):
 
         try:
             token = AccessToken(access_token)
-            user = User.objects.get(id=token['user_id'])
+            user = User.objects.get(id=token['user_id'], is_deleted=False)
         except (TokenError, User.DoesNotExist):
             raise AuthenticationFailed('유효하지 않은 토큰입니다.')
 

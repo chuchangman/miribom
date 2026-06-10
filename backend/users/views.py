@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
+from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
 from .serializers import SignupSerializer, LoginSerializer
 
@@ -73,6 +74,7 @@ def _get_or_create_social_user(provider, oauth_id, email, nickname):
 class SignupView(APIView):
     authentication_classes = []
 
+    @extend_schema(request=SignupSerializer, responses={200: None, 400: None, 409: None}, summary='이메일 회원가입')
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if not serializer.is_valid():
@@ -96,19 +98,23 @@ class SignupView(APIView):
 class EmailLoginView(APIView):
     authentication_classes = []
 
+    @extend_schema(request=LoginSerializer, responses={200: None, 400: None, 401: None}, summary='이메일 로그인')
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
-        email_user = EmailUser.objects.filter(email=data['email']).first()
+        email_user = EmailUser.objects.select_related('user_id').filter(email=data['email']).first()
 
         if not email_user or not check_password(data['password'], email_user.password):
             return Response(
                 {'error': '이메일 또는 비밀번호가 올바르지 않습니다.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        if email_user.user_id.is_deleted:
+            return Response({'error': '탈퇴한 계정입니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         return _issue_jwt(email_user.user_id)
 

@@ -34,6 +34,10 @@ class ProductListView(APIView):
 
         category_id = request.query_params.get('category')
         if category_id:
+            try:
+                category_id = int(category_id)
+            except ValueError:
+                return Response({'detail': 'category는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
             queryset = queryset.filter(category_id=category_id)
 
         q = request.query_params.get('q')
@@ -69,9 +73,12 @@ class BookmarkListView(APIView):
 
     @extend_schema(request=BookmarkCreateSerializer, responses=BookmarkSerializer, summary='북마크 추가')
     def post(self, request):
-        product_id = request.data.get('product_id')
+        serializer = BookmarkCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            product = Product.objects.get(pk=product_id)
+            product = Product.objects.get(pk=serializer.validated_data['product_id'])
         except Product.DoesNotExist:
             return Response({'detail': '상품을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
