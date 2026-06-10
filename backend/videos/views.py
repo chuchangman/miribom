@@ -1,6 +1,7 @@
 import uuid
 import boto3
 from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -67,22 +68,29 @@ class VideoPresignedUrlView(APIView):
         ext = filename.rsplit('.', 1)[-1] if '.' in filename else 'mp4'
         r2_key = f"videos/{request.user.id}/{uuid.uuid4()}.{ext}"
 
+        try:
+            client = get_r2_client()
+            presigned_url = client.generate_presigned_url(
+                'put_object',
+                Params={
+                    'Bucket': settings.R2_BUCKET_NAME,
+                    'Key': r2_key,
+                    'ContentType': content_type,
+                },
+                ExpiresIn=600,
+            )
+        except (BotoCoreError, ClientError):
+            return Response(
+                {'detail': 'R2 서비스에 연결할 수 없습니다. 환경 설정을 확인해주세요.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         video_upload = VideoUpload.objects.create(
             user_id=request.user,
             video_url='',
             thumbnail_url='',
+            r2_key=r2_key,
             status='pending',
-        )
-
-        client = get_r2_client()
-        presigned_url = client.generate_presigned_url(
-            'put_object',
-            Params={
-                'Bucket': settings.R2_BUCKET_NAME,
-                'Key': r2_key,
-                'ContentType': content_type,
-            },
-            ExpiresIn=600,
         )
 
         return Response(
@@ -133,6 +141,9 @@ class VideoUploadCompleteView(APIView):
         if video_upload.status == 'uploaded':
             return Response({'detail': '이미 완료된 업로드입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        if video_upload.r2_key != r2_key:
+            return Response({'detail': '유효하지 않은 r2_key입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
         video_url = f"{settings.R2_PUBLIC_URL}/{r2_key}"
         video_upload.video_url = video_url
         video_upload.status = 'uploaded'
@@ -162,6 +173,18 @@ class VideoView(APIView):
     def get(self, request):
         product_id = request.query_params.get('product_id')
         cursor = request.query_params.get('cursor')
+
+        if product_id is not None:
+            try:
+                product_id = int(product_id)
+            except ValueError:
+                return Response({'detail': 'product_id는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if cursor is not None:
+            try:
+                cursor = int(cursor)
+            except ValueError:
+                return Response({'detail': 'cursor는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         qs = Video.objects.filter(is_deleted=False).select_related(
             'video_upload_id', 'user_id', 'product_id'
@@ -211,6 +234,9 @@ class VideoView(APIView):
 
         if video_upload.status != 'uploaded':
             return Response({'detail': '업로드가 완료되지 않은 영상입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Video.objects.filter(video_upload_id=video_upload).exists():
+            return Response({'detail': '이미 등록된 영상입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             product = Product.objects.get(id=data['product_id'])

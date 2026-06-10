@@ -7,6 +7,7 @@ class VideoUpload(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     video_url = models.CharField(max_length=500, null=False)
     thumbnail_url = models.CharField(max_length=500)
+    r2_key = models.CharField(max_length=500, blank=True, default='')
     predicted_category_id = models.ForeignKey('products.Category', on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=20, null=False)
     created_at = models.DateTimeField(auto_now_add=True)

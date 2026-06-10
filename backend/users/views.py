@@ -122,6 +122,8 @@ class EmailLoginView(APIView):
 # ── 로그아웃 / 토큰 갱신 ────────────────────────────────────────────────
 
 class LogoutView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         response.delete_cookie('access_token')
