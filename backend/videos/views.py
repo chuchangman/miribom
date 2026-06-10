@@ -1,3 +1,233 @@
-from django.shortcuts import render
+import uuid
+import boto3
+from botocore.config import Config
+from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+from products.models import Product
+from .models import VideoUpload, Video
+from .serializers import (
+    VideoPresignedUrlSerializer,
+    VideoUploadCompleteSerializer,
+    VideoCreateSerializer,
+    VideoFeedSerializer,
+)
 
-# Create your views here.
+
+def get_r2_client():
+    return boto3.client(
+        's3',
+        endpoint_url=settings.R2_ENDPOINT_URL,
+        aws_access_key_id=settings.R2_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+        config=Config(signature_version='s3v4'),
+        region_name='auto',
+    )
+
+
+class VideoPresignedUrlView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='영상 업로드용 Presigned URL 발급',
+        request=VideoPresignedUrlSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'video_upload_id': {'type': 'integer'},
+                    'presigned_url': {'type': 'string'},
+                    'r2_key': {'type': 'string'},
+                },
+            },
+            400: {'description': '파일 형식 또는 크기 오류'},
+        },
+    )
+    def post(self, request):
+        serializer = VideoPresignedUrlSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        filename = data['filename']
+        content_type = data['content_type']
+        file_size = data['file_size']
+
+        if file_size > settings.VIDEO_MAX_SIZE_BYTES:
+            max_mb = settings.VIDEO_MAX_SIZE_BYTES // (1024 * 1024)
+            return Response(
+                {'detail': f'파일 크기는 {max_mb}MB를 초과할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ext = filename.rsplit('.', 1)[-1] if '.' in filename else 'mp4'
+        r2_key = f"videos/{request.user.id}/{uuid.uuid4()}.{ext}"
+
+        video_upload = VideoUpload.objects.create(
+            user_id=request.user,
+            video_url='',
+            thumbnail_url='',
+            status='pending',
+        )
+
+        client = get_r2_client()
+        presigned_url = client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': settings.R2_BUCKET_NAME,
+                'Key': r2_key,
+                'ContentType': content_type,
+            },
+            ExpiresIn=600,
+        )
+
+        return Response(
+            {
+                'video_upload_id': video_upload.id,
+                'presigned_url': presigned_url,
+                'r2_key': r2_key,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class VideoUploadCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='영상 업로드 완료 상태 저장',
+        request=VideoUploadCompleteSerializer,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'video_upload_id': {'type': 'integer'},
+                    'video_url': {'type': 'string'},
+                    'status': {'type': 'string'},
+                },
+            },
+            400: {'description': 'r2_key 누락 또는 이미 완료된 업로드'},
+            403: {'description': '권한 없음'},
+            404: {'description': '업로드 레코드 없음'},
+        },
+    )
+    def patch(self, request, video_upload_id):
+        serializer = VideoUploadCompleteSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        r2_key = serializer.validated_data['r2_key']
+
+        try:
+            video_upload = VideoUpload.objects.get(id=video_upload_id)
+        except VideoUpload.DoesNotExist:
+            return Response({'detail': '업로드 레코드를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if video_upload.user_id != request.user:
+            return Response({'detail': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if video_upload.status == 'uploaded':
+            return Response({'detail': '이미 완료된 업로드입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        video_url = f"{settings.R2_PUBLIC_URL}/{r2_key}"
+        video_upload.video_url = video_url
+        video_upload.status = 'uploaded'
+        video_upload.save(update_fields=['video_url', 'status'])
+
+        return Response(
+            {
+                'video_upload_id': video_upload.id,
+                'video_url': video_url,
+                'status': video_upload.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class VideoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='영상 피드 조회 (전체 또는 특정 제품)',
+        parameters=[
+            OpenApiParameter(name='product_id', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='특정 제품의 영상만 조회'),
+            OpenApiParameter(name='cursor', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='마지막으로 받은 video id (다음 페이지 조회용)'),
+        ],
+        responses={200: VideoFeedSerializer(many=True)},
+    )
+    def get(self, request):
+        product_id = request.query_params.get('product_id')
+        cursor = request.query_params.get('cursor')
+
+        qs = Video.objects.filter(is_deleted=False).select_related(
+            'video_upload_id', 'user_id', 'product_id'
+        ).order_by('-id')
+
+        if product_id:
+            qs = qs.filter(product_id=product_id)
+
+        if cursor:
+            qs = qs.filter(id__lt=cursor)
+
+        videos = qs[:20]
+        serializer = VideoFeedSerializer(videos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='영상 등록 (VideoUpload → Video, 제품 연결)',
+        request=VideoCreateSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer'},
+                    'video_url': {'type': 'string'},
+                    'product_id': {'type': 'integer'},
+                },
+            },
+            400: {'description': '유효하지 않은 요청'},
+            403: {'description': '권한 없음'},
+            404: {'description': 'VideoUpload 또는 Product 없음'},
+        },
+    )
+    def post(self, request):
+        serializer = VideoCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+
+        try:
+            video_upload = VideoUpload.objects.get(id=data['video_upload_id'])
+        except VideoUpload.DoesNotExist:
+            return Response({'detail': 'VideoUpload를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if video_upload.user_id != request.user:
+            return Response({'detail': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if video_upload.status != 'uploaded':
+            return Response({'detail': '업로드가 완료되지 않은 영상입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product = Product.objects.get(id=data['product_id'])
+        except Product.DoesNotExist:
+            return Response({'detail': '제품을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        video = Video.objects.create(
+            video_upload_id=video_upload,
+            product_id=product,
+            user_id=request.user,
+        )
+
+        return Response(
+            {
+                'id': video.id,
+                'video_url': video_upload.video_url,
+                'product_id': product.id,
+            },
+            status=status.HTTP_201_CREATED,
+        )
