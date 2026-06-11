@@ -3,6 +3,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from django.conf import settings
+from django.db import IntegrityError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,12 +11,14 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from products.models import Product
-from .models import VideoUpload, Video
+from .models import VideoUpload, Video, Review
 from .serializers import (
     VideoPresignedUrlSerializer,
     VideoUploadCompleteSerializer,
     VideoCreateSerializer,
     VideoFeedSerializer,
+    ReviewCreateSerializer,
+    ReviewDetailSerializer,
 )
 
 
@@ -79,7 +82,7 @@ class VideoPresignedUrlView(APIView):
                 },
                 ExpiresIn=600,
             )
-        except (BotoCoreError, ClientError):
+        except (BotoCoreError, ClientError, ValueError):
             return Response(
                 {'detail': 'R2 서비스에 연결할 수 없습니다. 환경 설정을 확인해주세요.'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -257,3 +260,104 @@ class VideoView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class ReviewListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='영상 리뷰 목록 조회',
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='마지막으로 받은 review id (다음 페이지 조회용)'),
+        ],
+        responses={
+            200: ReviewDetailSerializer(many=True),
+            404: {'description': '영상 없음'},
+        },
+    )
+    def get(self, request, video_id):
+        try:
+            video = Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        cursor = request.query_params.get('cursor')
+        if cursor is not None:
+            try:
+                cursor = int(cursor)
+            except ValueError:
+                return Response({'detail': 'cursor는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = Review.objects.filter(
+            video_id=video, is_deleted=False
+        ).select_related(
+            'user_id', 'video_id__product_id'
+        ).order_by('-id')
+
+        if cursor:
+            qs = qs.filter(id__lt=cursor)
+
+        reviews = qs[:20]
+        serializer = ReviewDetailSerializer(reviews, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='리뷰 생성',
+        request=ReviewCreateSerializer,
+        responses={
+            201: ReviewDetailSerializer,
+            400: {'description': '유효하지 않은 요청 또는 이미 작성한 리뷰'},
+            404: {'description': '영상 없음'},
+        },
+    )
+    def post(self, request, video_id):
+        try:
+            video = Video.objects.select_related('product_id').get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ReviewCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            review = Review.objects.create(
+                video_id=video,
+                user_id=request.user,
+                rating=serializer.validated_data['rating'],
+                content=serializer.validated_data['content'],
+            )
+        except IntegrityError:
+            return Response({'detail': '이미 리뷰를 작성한 영상입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        review.user_id = request.user
+        review.video_id = video
+        response_serializer = ReviewDetailSerializer(review)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ReviewDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='리뷰 상세 조회',
+        responses={
+            200: ReviewDetailSerializer,
+            404: {'description': '리뷰 또는 영상 없음'},
+        },
+    )
+    def get(self, request, video_id, review_id):
+        try:
+            Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            review = Review.objects.select_related(
+                'user_id', 'video_id__product_id'
+            ).get(id=review_id, video_id=video_id, is_deleted=False)
+        except Review.DoesNotExist:
+            return Response({'detail': '리뷰를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ReviewDetailSerializer(review)
+        return Response(serializer.data, status=status.HTTP_200_OK)
