@@ -1,8 +1,8 @@
 <template>
   <div class="app-layout">
-    <AppSidebar />
+    <AppSidebar v-if="isAuthInitialized" />
     <main class="page-content">
-      <div class="page-header">
+      <div v-if="isAuthInitialized" class="page-header">
         <AppHeaderActions />
       </div>
       <RouterView />
@@ -16,10 +16,10 @@ import AppSidebar from './components/AppSidebar.vue'
 import AppHeaderActions from './components/AppHeaderActions.vue'
 import { useAuth } from './composables/useAuth.js'
 import { onMounted } from 'vue'
-const { checkAuth } = useAuth()
+const { checkAuth, isAuthInitialized } = useAuth()
 
-onMounted(async () => {
-  await checkAuth()
+onMounted(() => {
+  checkAuth()
 })
 </script>
 

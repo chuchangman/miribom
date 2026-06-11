@@ -47,7 +47,9 @@
       @blur="checkPasswordMatch"
     />
     <p class="error-message" v-if="errorConfirmPassword">{{ errorConfirmPassword }}</p>
-    <button type="submit" id="signup-btn">회원가입</button>
+    <button type="submit" id="signup-btn" :disabled="isSubmitting">
+      {{ isSubmitting ? '가입 처리 중...' : '회원가입' }}
+    </button>
   </form>
 </template>
 
@@ -72,6 +74,7 @@ const errorNickname = ref('')
 const errorEmail = ref('')
 const errorPassword = ref('')
 const errorConfirmPassword = ref('')
+const isSubmitting = ref(false)
 
 const handleProfileImgChange = (event) => {
   const file = event.target.files[0]
@@ -148,6 +151,10 @@ const changePassword = () => {
 }
 
 const signup = async () => {
+  if (isSubmitting.value) {
+    return
+  }
+
   const validNickname = validateNickname()
   const validEmail = validateEmail()
   const validPassword = validatePassword()
@@ -156,6 +163,9 @@ const signup = async () => {
     alert('입력한 정보를 확인해주세요.')
     return
   }
+
+  isSubmitting.value = true
+
   try {
     const response = await fetch(`${AUTH_API_URL}/signup/`, {
       method: 'POST',
@@ -195,6 +205,8 @@ const signup = async () => {
     router.push('/living-profile')
   } catch {
     alert('회원가입 실패')
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -233,5 +245,9 @@ input {
 }
 #signup-btn:hover {
   background-color: #007bb5;
+}
+#signup-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>
