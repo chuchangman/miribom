@@ -13,7 +13,7 @@ class VideoUpload(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Video(models.Model):
-    video_upload_id = models.ForeignKey(VideoUpload, on_delete=models.CASCADE)
+    video_upload_id = models.OneToOneField(VideoUpload, on_delete=models.CASCADE)
     product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
     user_id = models.ForeignKey('users.User', on_delete=models.CASCADE)
     is_deleted = models.BooleanField(default=False)
@@ -26,6 +26,11 @@ class Review(models.Model):
     content = models.TextField()
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['video_id', 'user_id'], name='unique_review_per_user_video')
+        ]
 
 class Like(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
