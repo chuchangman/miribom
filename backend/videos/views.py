@@ -307,6 +307,7 @@ class ReviewListCreateView(APIView):
         responses={
             201: ReviewDetailSerializer,
             400: {'description': '유효하지 않은 요청 또는 이미 작성한 리뷰'},
+            403: {'description': '본인 영상이 아님'},
             404: {'description': '영상 없음'},
         },
     )
@@ -315,6 +316,9 @@ class ReviewListCreateView(APIView):
             video = Video.objects.select_related('product_id').get(id=video_id, is_deleted=False)
         except Video.DoesNotExist:
             return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if video.user_id != request.user:
+            return Response({'detail': '본인이 업로드한 영상에만 리뷰를 작성할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = ReviewCreateSerializer(data=request.data)
         if not serializer.is_valid():
