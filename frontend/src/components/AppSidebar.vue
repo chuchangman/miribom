@@ -17,34 +17,49 @@
     </div>
     <div class="category">
       <p>카테고리</p>
-      <RouterLink to="/products?category=세탁·건조" class="sidebar-link">세탁·건조</RouterLink>
-      <RouterLink to="/products?category=냉장고" class="sidebar-link">냉장고</RouterLink>
-      <RouterLink to="/products?category=주방소가전" class="sidebar-link">주방소가전</RouterLink>
-      <RouterLink to="/products?category=청소기" class="sidebar-link">청소기</RouterLink>
-      <RouterLink to="/products?category=계절가전" class="sidebar-link">계절가전</RouterLink>
-      <RouterLink to="/products?category=제습기·가습기" class="sidebar-link"
-        >제습기·가습기</RouterLink
+      <RouterLink
+        v-for="category in categories"
+        :key="category.id"
+        :to="{ name: 'ProductSearch', query: { category: category.id } }"
+        class="sidebar-link"
       >
-      <RouterLink to="/products?category=PC주변기기" class="sidebar-link">PC주변기기</RouterLink>
-      <RouterLink to="/products?category=빔프로젝터" class="sidebar-link">빔프로젝터</RouterLink>
+        {{ category.name }}
+      </RouterLink>
     </div>
   </nav>
 </template>
 
 <script setup>
+import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { fetchProductCategories } from '@/services/productApi.js'
 import miribomLogo from '@/assets/images/miribom-logo.svg'
 
 const { isLogin } = useAuth()
+const categories = ref([])
+
+const loadCategories = async () => {
+  try {
+    categories.value = await fetchProductCategories()
+  } catch {
+    categories.value = []
+  }
+}
+
+onMounted(loadCategories)
 </script>
 
 <style scoped>
 nav {
+  position: sticky;
+  top: 0;
   width: 150px;
-  min-height: 100vh;
+  height: 100vh;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   background-color: #f0f0f0;
   padding: 0.5rem;
   box-sizing: border-box;

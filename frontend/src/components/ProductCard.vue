@@ -1,7 +1,7 @@
 <template>
   <div class="product-card" @click="getProductDetailPage(props.product.id)">
     <button class="bookmark-button" type="button" @click.stop="toggleBookmark">
-      {{ isBookmarked ? '♥' : '♡' }}
+      {{ currentBookmarked ? '♥' : '♡' }}
     </button>
     <img :src="props.product.imageUrl" :alt="props.product.name" />
     <h2>{{ props.product.name }}</h2>
@@ -12,35 +12,57 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const isBookmarked = ref(false)
 
 const props = defineProps({
   product: {
     type: Object,
     required: true,
   },
+  isBookmarked: {
+    type: Boolean,
+    default: false,
+  },
+  manageBookmark: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['toggle-bookmark'])
+const currentBookmarked = ref(props.isBookmarked)
 
 const getProductDetailPage = (id) => {
   router.push({ name: 'ProductDetail', params: { id } })
 }
 
 const toggleBookmark = () => {
-  isBookmarked.value = !isBookmarked.value
+  if (!props.manageBookmark) {
+    currentBookmarked.value = !currentBookmarked.value
+  }
+  emit('toggle-bookmark', props.product)
 }
+
+watch(
+  () => props.isBookmarked,
+  (isBookmarked) => {
+    currentBookmarked.value = isBookmarked
+  },
+)
 </script>
 
 <style scoped>
 .product-card {
   position: relative;
+  box-sizing: border-box;
+  height: 430px;
   border: 1px solid #ccc;
   padding: 16px;
-  margin-bottom: 16px;
   cursor: pointer;
+  overflow: hidden;
 }
 .bookmark-button {
   position: absolute;
@@ -59,13 +81,26 @@ const toggleBookmark = () => {
 }
 .product-card img {
   width: 100%;
-  height: auto;
+  height: 220px;
+  display: block;
+  object-fit: contain;
+  background-color: white;
 }
 .product-card h2 {
   margin: 8px 0;
+  min-height: 2.8em;
+  font-size: 1.1em;
+  line-height: 1.4;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .product-card p {
   margin: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .product-card:hover {
   cursor: pointer;
