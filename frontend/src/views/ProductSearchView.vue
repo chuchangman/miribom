@@ -25,10 +25,17 @@
   <template v-else>
     <ul>
       <li v-for="product in products" :key="product.id">
-        <ProductCard :product="product" />
+        <ProductCard
+          :product="product"
+          :is-bookmarked="bookmarksByProductId.has(Number(product.id))"
+          :is-bookmark-pending="bookmarkPendingProductId === Number(product.id)"
+          :manage-bookmark="true"
+          @toggle-bookmark="toggleProductBookmark"
+        />
       </li>
     </ul>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p v-if="bookmarkErrorMessage" class="error-message">{{ bookmarkErrorMessage }}</p>
     <p v-if="isLoadingMore">제품을 더 불러오는 중입니다.</p>
     <div v-if="hasNext" ref="loadMoreTrigger" class="load-more-trigger" aria-hidden="true"></div>
   </template>
@@ -40,9 +47,12 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ProductCard from '@/components/ProductCard.vue'
 import { fetchProductCategories, fetchProducts } from '@/services/productApi.js'
 import { useProductSearchState } from '@/composables/useProductSearchState.js'
+import { createBookmark, deleteBookmark, fetchBookmarks } from '@/services/bookmarkApi.js'
+import { useAuth } from '@/composables/useAuth.js'
 
 const router = useRouter()
 const route = useRoute()
+const { isAuthInitialized, isLogin } = useAuth()
 const { clearSearchState, restoreSearchState, saveSearchState } = useProductSearchState()
 const initialRouteKey = route.fullPath
 const restoredSearchState = restoreSearchState(initialRouteKey)
@@ -54,6 +64,9 @@ const products = ref(restoredSearchState?.products || [])
 const isLoading = ref(false)
 const isLoadingMore = ref(false)
 const errorMessage = ref('')
+const bookmarkErrorMessage = ref('')
+const bookmarksByProductId = ref(new Map())
+const bookmarkPendingProductId = ref(null)
 const hasNext = ref(restoredSearchState?.hasNext ?? true)
 const nextOffset = ref(restoredSearchState?.nextOffset ?? 0)
 const loadMoreTrigger = ref(null)
@@ -157,6 +170,58 @@ const loadCategories = async () => {
   }
 }
 
+const loadBookmarks = async () => {
+  bookmarkErrorMessage.value = ''
+
+  if (!isLogin.value) {
+    bookmarksByProductId.value = new Map()
+    return
+  }
+
+  try {
+    const bookmarks = await fetchBookmarks()
+    bookmarksByProductId.value = new Map(
+      bookmarks.map((bookmark) => [bookmark.product.id, bookmark.id]),
+    )
+  } catch (error) {
+    bookmarkErrorMessage.value = error.message || '즐겨찾기 상태를 불러오지 못했습니다.'
+  }
+}
+
+const toggleProductBookmark = async (product) => {
+  if (!isLogin.value) {
+    router.push({ name: 'Login' })
+    return
+  }
+
+  const productId = Number(product.id)
+  if (bookmarkPendingProductId.value !== null) {
+    return
+  }
+
+  bookmarkPendingProductId.value = productId
+  bookmarkErrorMessage.value = ''
+
+  try {
+    const bookmarkId = bookmarksByProductId.value.get(productId)
+    const updatedBookmarks = new Map(bookmarksByProductId.value)
+
+    if (bookmarkId) {
+      await deleteBookmark(bookmarkId)
+      updatedBookmarks.delete(productId)
+    } else {
+      const bookmark = await createBookmark(productId)
+      updatedBookmarks.set(productId, bookmark.id)
+    }
+
+    bookmarksByProductId.value = updatedBookmarks
+  } catch (error) {
+    bookmarkErrorMessage.value = error.message || '즐겨찾기 상태를 변경하지 못했습니다.'
+  } finally {
+    bookmarkPendingProductId.value = null
+  }
+}
+
 const handleSearch = () => {
   // 검색 로직
   router.push({
@@ -208,6 +273,16 @@ watch(loadMoreTrigger, (newTrigger, oldTrigger) => {
     observer.observe(newTrigger)
   }
 })
+
+watch(
+  [isAuthInitialized, isLogin],
+  ([isInitialized]) => {
+    if (isInitialized) {
+      loadBookmarks()
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   loadCategories()

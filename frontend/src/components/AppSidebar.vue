@@ -54,7 +54,7 @@ onMounted(loadCategories)
 nav {
   position: sticky;
   top: 0;
-  width: 150px;
+  width: clamp(150px, 16vw, 220px);
   height: 100vh;
   flex-shrink: 0;
   display: flex;

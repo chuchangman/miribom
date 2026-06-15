@@ -1,7 +1,12 @@
 <template>
   <div class="product-card" @click="getProductDetailPage(props.product.id)">
-    <button class="bookmark-button" type="button" @click.stop="toggleBookmark">
-      {{ currentBookmarked ? '♥' : '♡' }}
+    <button
+      class="bookmark-button"
+      type="button"
+      :disabled="isBookmarkPending"
+      @click.stop="toggleBookmark"
+    >
+      {{ isBookmarked ? '♥' : '♡' }}
     </button>
     <img :src="props.product.imageUrl" :alt="props.product.name" />
     <h2>{{ props.product.name }}</h2>
@@ -12,7 +17,6 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -30,28 +34,25 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isBookmarkPending: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['toggle-bookmark'])
-const currentBookmarked = ref(props.isBookmarked)
 
 const getProductDetailPage = (id) => {
   router.push({ name: 'ProductDetail', params: { id } })
 }
 
 const toggleBookmark = () => {
-  if (!props.manageBookmark) {
-    currentBookmarked.value = !currentBookmarked.value
+  if (props.isBookmarkPending) {
+    return
   }
+
   emit('toggle-bookmark', props.product)
 }
-
-watch(
-  () => props.isBookmarked,
-  (isBookmarked) => {
-    currentBookmarked.value = isBookmarked
-  },
-)
 </script>
 
 <style scoped>
@@ -78,6 +79,10 @@ watch(
 }
 .bookmark-button:hover {
   background-color: #f0f0f0;
+}
+.bookmark-button:disabled {
+  cursor: pointer;
+  opacity: 0.6;
 }
 .product-card img {
   width: 100%;
