@@ -15,27 +15,30 @@
   <div>
     <h2>카테고리</h2>
     <p>원하는 가전을 골라보세요.</p>
+    <p v-if="isLoadingCategories">카테고리를 불러오는 중입니다.</p>
+    <p v-else-if="categoryErrorMessage" class="error-message">{{ categoryErrorMessage }}</p>
     <div class="category-list">
-      <CategoryCard category="세탁·건조" />
-      <CategoryCard category="냉장고" />
-      <CategoryCard category="주방소가전" />
-      <CategoryCard category="청소기" />
-      <CategoryCard category="계절가전" />
-      <CategoryCard category="제습기·가습기" />
-      <CategoryCard category="PC주변기기" />
-      <CategoryCard category="빔프로젝터" />
+      <CategoryCard
+        v-for="category in categories"
+        :key="category.id"
+        :category="category"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { useRouter, RouterLink } from 'vue-router'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import CategoryCard from '@/components/CategoryCard.vue'
+import { fetchProductCategories } from '@/services/productApi.js'
 
 const router = useRouter()
 
 const searchQuery = ref('')
+const categories = ref([])
+const isLoadingCategories = ref(false)
+const categoryErrorMessage = ref('')
 
 function search() {
   router.push({
@@ -43,6 +46,21 @@ function search() {
     query: searchQuery.value ? { search: searchQuery.value } : {},
   })
 }
+
+const loadCategories = async () => {
+  isLoadingCategories.value = true
+  categoryErrorMessage.value = ''
+
+  try {
+    categories.value = await fetchProductCategories()
+  } catch (error) {
+    categoryErrorMessage.value = error.message || '카테고리를 불러오지 못했습니다.'
+  } finally {
+    isLoadingCategories.value = false
+  }
+}
+
+onMounted(loadCategories)
 </script>
 
 <style scoped>
@@ -79,6 +97,9 @@ h3 {
   background: none;
   color: #2563eb;
   cursor: pointer;
+}
+.error-message {
+  color: red;
 }
 nav a {
   margin-right: 1em;
