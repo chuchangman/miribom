@@ -4,12 +4,13 @@
   <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
   <p v-else-if="favoriteProducts.length === 0">즐겨찾기한 제품이 없습니다.</p>
   <ul v-else>
-    <li v-for="item in favoriteProducts" :key="item.bookmarkId">
+    <li v-for="item in favoriteProducts" :key="item.product.id">
       <ProductCard
         :product="item.product"
-        :is-bookmarked="true"
+        :is-bookmarked="item.isBookmarked"
+        :is-bookmark-pending="pendingProductId === item.product.id"
         :manage-bookmark="true"
-        @toggle-bookmark="removeFavorite(item.bookmarkId)"
+        @toggle-bookmark="toggleFavorite(item)"
       />
     </li>
   </ul>
@@ -18,15 +19,16 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import ProductCard from '@/components/ProductCard.vue'
-import { deleteBookmark, fetchBookmarks } from '@/services/bookmarkApi.js'
+import { createBookmark, deleteBookmark, fetchBookmarks } from '@/services/bookmarkApi.js'
 
 const favoriteProducts = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
-const deletingBookmarkId = ref(null)
+const pendingProductId = ref(null)
 
 const mapBookmark = (bookmark) => ({
   bookmarkId: bookmark.id,
+  isBookmarked: true,
   product: {
     id: String(bookmark.product.id),
     name: bookmark.product.title,
@@ -52,23 +54,28 @@ const loadFavorites = async () => {
   }
 }
 
-const removeFavorite = async (bookmarkId) => {
-  if (deletingBookmarkId.value !== null) {
+const toggleFavorite = async (item) => {
+  if (pendingProductId.value !== null) {
     return
   }
 
-  deletingBookmarkId.value = bookmarkId
+  pendingProductId.value = item.product.id
   errorMessage.value = ''
 
   try {
-    await deleteBookmark(bookmarkId)
-    favoriteProducts.value = favoriteProducts.value.filter(
-      (item) => item.bookmarkId !== bookmarkId,
-    )
+    if (item.isBookmarked) {
+      await deleteBookmark(item.bookmarkId)
+      item.bookmarkId = null
+      item.isBookmarked = false
+    } else {
+      const bookmark = await createBookmark(Number(item.product.id))
+      item.bookmarkId = bookmark.id
+      item.isBookmarked = true
+    }
   } catch (error) {
-    errorMessage.value = error.message || '즐겨찾기를 삭제하지 못했습니다.'
+    errorMessage.value = error.message || '즐겨찾기 상태를 변경하지 못했습니다.'
   } finally {
-    deletingBookmarkId.value = null
+    pendingProductId.value = null
   }
 }
 
