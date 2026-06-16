@@ -5,7 +5,8 @@ from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
@@ -144,6 +145,9 @@ class CookieTokenRefreshView(APIView):
         except TokenError:
             return Response({'error': '유효하지 않은 리프레시 토큰입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
 
+        if not User.objects.filter(id=refresh['user_id'], is_deleted=False).exists():
+            return Response({'error': '탈퇴한 사용자입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
         response = Response(status=status.HTTP_200_OK)
         response.set_cookie(
             key='access_token',
@@ -159,17 +163,10 @@ class CookieTokenRefreshView(APIView):
 # ── 내 정보 조회 ─────────────────────────────────────────────────────────
 
 class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        access_token = request.COOKIES.get('access_token')
-        if not access_token:
-            return Response({'error': '인증이 필요합니다.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-            token = AccessToken(access_token)
-            user = User.objects.get(id=token['user_id'])
-        except (TokenError, User.DoesNotExist):
-            return Response({'error': '유효하지 않은 토큰입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
-
+        user = request.user
         return Response({
             'id': user.id,
             'nickname': user.nickname,

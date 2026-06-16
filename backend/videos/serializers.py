@@ -50,6 +50,7 @@ class VideoFeedSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product_id.title')
     product_image = serializers.CharField(source='product_id.image')
     product_lprice = serializers.IntegerField(source='product_id.lprice')
+    like_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Video
@@ -63,5 +64,6 @@ class VideoFeedSerializer(serializers.ModelSerializer):
             'product_title',
             'product_image',
             'product_lprice',
+            'like_count',
             'created_at',
         ]

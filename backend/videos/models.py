@@ -37,6 +37,11 @@ class Like(models.Model):
     video_id = models.ForeignKey(Video, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user_id', 'video_id'], name='unique_user_video_like')
+        ]
+
 class Comment(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     video_id = models.ForeignKey(Video, on_delete=models.CASCADE, null=False)
