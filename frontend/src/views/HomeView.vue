@@ -186,6 +186,7 @@ h3 {
   margin-bottom: 1em;
   border: 1px solid #cbd5e1;
   border-radius: 999px;
+  background-color: white;
   padding: 0.5em 0.75em;
 }
 
@@ -193,6 +194,7 @@ h3 {
   min-width: 0;
   flex: 1;
   border: 0;
+  background-color: transparent;
   padding: 0.5em;
   outline: none;
   font-size: 1em;

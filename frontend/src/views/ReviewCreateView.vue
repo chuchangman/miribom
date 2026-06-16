@@ -32,6 +32,10 @@
             id="review-product"
             v-model="productSearchQuery"
             @input="handleProductSearchInput"
+            @keydown.down.prevent="moveProductHighlight(1)"
+            @keydown.up.prevent="moveProductHighlight(-1)"
+            @keydown.enter.prevent="selectHighlightedProduct"
+            @keydown.esc="closeProductSuggestions"
             autocomplete="off"
           />
           <p v-if="productErrorMessage" class="error-message">{{ productErrorMessage }}</p>
@@ -40,9 +44,12 @@
           <p v-if="isSearchingProducts">제품을 검색하는 중입니다.</p>
           <ul v-else-if="productSuggestions.length > 0" class="product-suggestions">
             <li
-              v-for="product in productSuggestions"
+              v-for="(product, index) in productSuggestions"
               :key="product.id"
-              @click="handleSelect(product)"
+              :ref="(element) => setProductSuggestionRef(element, index)"
+              :class="{ 'product-suggestion--active': highlightedProductIndex === index }"
+              @mouseenter="highlightedProductIndex = index"
+              @pointerdown.prevent="handleSelect(product)"
             >
               {{ product.title }}<span v-if="product.brand"> · {{ product.brand }}</span>
             </li>
@@ -73,7 +80,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { createReviewFlow, fetchCategories, searchProducts } from '@/services/reviewApi.js'
 
 const categories = ref([])
@@ -81,6 +90,8 @@ const selectedCategory = ref('')
 const productSearchQuery = ref('')
 const selectedProduct = ref(null)
 const productSuggestions = ref([])
+const productSuggestionRefs = ref([])
+const highlightedProductIndex = ref(-1)
 const inputVideo = ref(null)
 const reviewRating = ref(null)
 const reviewContent = ref('')
@@ -88,6 +99,8 @@ const reviewContent = ref('')
 const isLoadingCategories = ref(false)
 const isSearchingProducts = ref(false)
 const isSubmitting = ref(false)
+const isSubmitted = ref(false)
+const { setHasUnsavedChanges } = useUnsavedChanges()
 
 const videoErrorMessage = ref('')
 const categoryErrorMessage = ref('')
@@ -98,6 +111,19 @@ const submitErrorMessage = ref('')
 
 let productSearchTimer = null
 let productSearchRequestId = 0
+
+const hasUnsavedChanges = computed(
+  () =>
+    !isSubmitted.value &&
+    Boolean(
+      inputVideo.value ||
+        selectedCategory.value ||
+        productSearchQuery.value.trim() ||
+        selectedProduct.value ||
+        reviewRating.value !== null ||
+        reviewContent.value.trim(),
+    ),
+)
 
 const validateVideo = () => {
   if (!inputVideo.value) {
@@ -180,6 +206,7 @@ const submitReview = async () => {
       rating: reviewRating.value,
       content: reviewContent.value.trim(),
     })
+    isSubmitted.value = true
     alert('후기가 등록되었습니다.')
   } catch (error) {
     submitErrorMessage.value = error.message || '후기 등록에 실패했습니다.'
@@ -205,11 +232,13 @@ const handleProductSearchInput = () => {
     selectedProduct.value = null
   }
 
+  ++productSearchRequestId
   productErrorMessage.value = ''
-  productSuggestions.value = []
   clearTimeout(productSearchTimer)
 
   if (!productSearchQuery.value.trim()) {
+    productSuggestions.value = []
+    highlightedProductIndex.value = -1
     return
   }
 
@@ -220,16 +249,18 @@ const handleProductSearchInput = () => {
 
 const loadProductSuggestions = async () => {
   const requestId = ++productSearchRequestId
+  const searchQuery = productSearchQuery.value
   isSearchingProducts.value = true
 
   try {
     const products = await searchProducts({
-      query: productSearchQuery.value,
+      query: searchQuery,
       categoryId: selectedCategory.value,
     })
 
     if (requestId === productSearchRequestId) {
       productSuggestions.value = products
+      highlightedProductIndex.value = products.length > 0 ? 0 : -1
     }
   } catch (error) {
     if (requestId === productSearchRequestId) {
@@ -243,15 +274,60 @@ const loadProductSuggestions = async () => {
 }
 
 const handleSelect = (product) => {
+  clearTimeout(productSearchTimer)
+  ++productSearchRequestId
+  isSearchingProducts.value = false
   selectedProduct.value = product
   productSearchQuery.value = product.title
   productSuggestions.value = []
+  highlightedProductIndex.value = -1
+}
+
+const setProductSuggestionRef = (element, index) => {
+  if (element) {
+    productSuggestionRefs.value[index] = element
+  }
+}
+
+const moveProductHighlight = (direction) => {
+  if (productSuggestions.value.length === 0) {
+    return
+  }
+
+  const lastIndex = productSuggestions.value.length - 1
+  const nextIndex = highlightedProductIndex.value + direction
+
+  if (nextIndex < 0) {
+    highlightedProductIndex.value = lastIndex
+  } else if (nextIndex > lastIndex) {
+    highlightedProductIndex.value = 0
+  } else {
+    highlightedProductIndex.value = nextIndex
+  }
+
+  productSuggestionRefs.value[highlightedProductIndex.value]?.scrollIntoView({
+    block: 'nearest',
+  })
+}
+
+const selectHighlightedProduct = () => {
+  const product = productSuggestions.value[highlightedProductIndex.value]
+
+  if (product) {
+    handleSelect(product)
+  }
+}
+
+const closeProductSuggestions = () => {
+  productSuggestions.value = []
+  highlightedProductIndex.value = -1
 }
 
 const handleCategoryChange = () => {
   selectedProduct.value = null
   productSearchQuery.value = ''
   productSuggestions.value = []
+  highlightedProductIndex.value = -1
   categoryErrorMessage.value = ''
 }
 
@@ -266,6 +342,44 @@ const loadCategories = async () => {
     isLoadingCategories.value = false
   }
 }
+
+watch(
+  [
+    inputVideo,
+    selectedCategory,
+    productSearchQuery,
+    selectedProduct,
+    reviewRating,
+    reviewContent,
+  ],
+  () => {
+    if (isSubmitted.value) {
+      isSubmitted.value = false
+    }
+  },
+)
+
+watch(
+  hasUnsavedChanges,
+  (value) => {
+    setHasUnsavedChanges(value)
+  },
+  { immediate: true },
+)
+
+onBeforeRouteLeave(() => {
+  if (!hasUnsavedChanges.value) {
+    return true
+  }
+
+  return window.confirm(
+    '지금 이동하면 작성한 정보가 초기화됩니다. 정말 이동하시겠습니까?',
+  )
+})
+
+onBeforeUnmount(() => {
+  setHasUnsavedChanges(false)
+})
 
 onMounted(loadCategories)
 </script>
@@ -288,12 +402,16 @@ onMounted(loadCategories)
   margin: 8px 0 0;
   border: 1px solid #ccc;
   border-radius: 4px;
+  max-height: 210px;
+  overflow-y: auto;
 }
 .product-suggestions li {
-  padding: 8px;
+  min-height: 42px;
+  padding: 10px 8px;
   cursor: pointer;
 }
-.product-suggestions li:hover {
+.product-suggestions li:hover,
+.product-suggestion--active {
   background-color: #f0f0f0;
 }
 .review-area {

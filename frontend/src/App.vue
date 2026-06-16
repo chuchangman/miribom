@@ -33,6 +33,7 @@ onMounted(() => {
   flex: 1;
   padding: 24px;
 }
+
 .page-header {
   display: flex;
   justify-content: flex-end;
