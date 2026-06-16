@@ -4,6 +4,7 @@ from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from django.conf import settings
 from django.db import IntegrityError
+from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from products.models import Product
-from .models import VideoUpload, Video, Review
+from .models import VideoUpload, Video, Review, Like
 from .serializers import (
     VideoPresignedUrlSerializer,
     VideoUploadCompleteSerializer,
@@ -194,7 +195,7 @@ class VideoView(APIView):
 
         qs = Video.objects.filter(is_deleted=False).select_related(
             'video_upload_id', 'user_id', 'product_id'
-        ).order_by('-id')
+        ).annotate(like_count=Count('like')).order_by('-id')
 
         if product_id:
             qs = qs.filter(product_id=product_id)
@@ -367,4 +368,68 @@ class ReviewDetailView(APIView):
             return Response({'detail': '리뷰를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = ReviewDetailSerializer(review)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LikeToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='영상 좋아요 토글 (추가/취소)',
+        responses={
+            200: {'type': 'object', 'properties': {'liked': {'type': 'boolean'}, 'like_count': {'type': 'integer'}}},
+            404: {'description': '영상 없음'},
+        },
+    )
+    def post(self, request, video_id):
+        try:
+            video = Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        like, created = Like.objects.get_or_create(user_id=request.user, video_id=video)
+        if not created:
+            like.delete()
+            liked = False
+        else:
+            liked = True
+
+        like_count = Like.objects.filter(video_id=video).count()
+        return Response(
+            {'liked': liked, 'like_count': like_count},
+            status=status.HTTP_201_CREATED if liked else status.HTTP_200_OK,
+        )
+
+
+class LikedVideoListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='좋아요한 영상 목록',
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='마지막으로 받은 video id (다음 페이지 조회용)'),
+        ],
+        responses={200: VideoFeedSerializer(many=True)},
+    )
+    def get(self, request):
+        cursor = request.query_params.get('cursor')
+        if cursor is not None:
+            try:
+                cursor = int(cursor)
+            except ValueError:
+                return Response({'detail': 'cursor는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        liked_video_ids = Like.objects.filter(user_id=request.user).values('video_id')
+        qs = Video.objects.filter(
+            is_deleted=False,
+            pk__in=liked_video_ids,
+        ).select_related(
+            'video_upload_id', 'user_id', 'product_id'
+        ).annotate(like_count=Count('like')).order_by('-id')
+
+        if cursor:
+            qs = qs.filter(id__lt=cursor)
+
+        videos = qs[:20]
+        serializer = VideoFeedSerializer(videos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

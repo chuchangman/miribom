@@ -101,3 +101,33 @@ class BookmarkDetailView(APIView):
             return Response({'detail': '북마크를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
         bookmark.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BookmarkToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='제품 즐겨찾기 토글 (추가/취소)',
+        responses={
+            200: {'type': 'object', 'properties': {'bookmarked': {'type': 'boolean'}}},
+            404: {'description': '제품 없음'},
+        },
+    )
+    def post(self, request, product_id):
+        try:
+            product = Product.objects.get(pk=product_id)
+        except Product.DoesNotExist:
+            return Response({'detail': '상품을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        bookmark = Bookmark.objects.filter(user_id=request.user, product_id=product).first()
+        if bookmark:
+            bookmark.delete()
+            bookmarked = False
+        else:
+            Bookmark.objects.create(user_id=request.user, product_id=product)
+            bookmarked = True
+
+        return Response(
+            {'bookmarked': bookmarked},
+            status=status.HTTP_201_CREATED if bookmarked else status.HTTP_200_OK,
+        )
