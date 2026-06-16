@@ -67,15 +67,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 
 const router = useRouter()
 const housingType = ref('')
 const areaSize = ref(1)
+const isSaved = ref(false)
 
 const housingTypeError = ref('')
 const areaSizeError = ref('')
+
+const hasUnsavedChanges = computed(
+  () => !isSaved.value && Boolean(housingType.value || Number(areaSize.value) !== 1),
+)
 
 function saveLivingProfile() {
   housingTypeError.value = ''
@@ -93,8 +98,19 @@ function saveLivingProfile() {
     return
   }
 
+  isSaved.value = true
   router.push('/mypage')
 }
+
+onBeforeRouteLeave(() => {
+  if (!hasUnsavedChanges.value) {
+    return true
+  }
+
+  return window.confirm(
+    '지금 이동하면 작성한 정보가 초기화됩니다. 정말 이동하시겠습니까?',
+  )
+})
 </script>
 
 <style scoped>

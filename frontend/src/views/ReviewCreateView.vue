@@ -7,7 +7,7 @@
           <label for="review-video">영상 선택</label>
           <input
             type="file"
-            accept="video/*"
+            accept="video/mp4,video/quicktime,video/webm"
             name="review-video"
             id="review-video"
             @change="uploadVideo"
@@ -15,17 +15,13 @@
           <p v-if="videoErrorMessage" class="error-message">{{ videoErrorMessage }}</p>
         </div>
         <div class="review-category">
-          <select v-model="selectedCategory" class="category-select">
+          <select v-model="selectedCategory" class="category-select" @change="handleCategoryChange">
             <option value="">선택</option>
-            <option value="세탁·건조">세탁·건조</option>
-            <option value="냉장고">냉장고</option>
-            <option value="주방소가전">주방소가전</option>
-            <option value="청소기">청소기</option>
-            <option value="계절가전">계절가전</option>
-            <option value="제습기·가습기">제습기·가습기</option>
-            <option value="PC주변기기">PC주변기기</option>
-            <option value="빔프로젝터">빔프로젝터</option>
+            <option v-for="category in categories" :key="category.id" :value="category.id">
+              {{ category.name }}
+            </option>
           </select>
+          <p v-if="isLoadingCategories">카테고리를 불러오는 중입니다.</p>
           <p v-if="categoryErrorMessage" class="error-message">{{ categoryErrorMessage }}</p>
         </div>
         <div class="review-product">
@@ -36,13 +32,26 @@
             id="review-product"
             v-model="productSearchQuery"
             @input="handleProductSearchInput"
+            @keydown.down.prevent="moveProductHighlight(1)"
+            @keydown.up.prevent="moveProductHighlight(-1)"
+            @keydown.enter.prevent="selectHighlightedProduct"
+            @keydown.esc="closeProductSuggestions"
+            autocomplete="off"
           />
           <p v-if="productErrorMessage" class="error-message">{{ productErrorMessage }}</p>
           <p v-else-if="!selectedProduct">선택된 제품이 없습니다.</p>
-          <p v-else>선택된 제품: {{ selectedProduct.name }}</p>
-          <ul v-if="filteredProduct.length > 0" class="product-suggestions">
-            <li v-for="product in filteredProduct" :key="product.id" @click="handleSelect(product)">
-              {{ product.name }}
+          <p v-else>선택된 제품: {{ selectedProduct.title }}</p>
+          <p v-if="isSearchingProducts">제품을 검색하는 중입니다.</p>
+          <ul v-else-if="productSuggestions.length > 0" class="product-suggestions">
+            <li
+              v-for="(product, index) in productSuggestions"
+              :key="product.id"
+              :ref="(element) => setProductSuggestionRef(element, index)"
+              :class="{ 'product-suggestion--active': highlightedProductIndex === index }"
+              @mouseenter="highlightedProductIndex = index"
+              @pointerdown.prevent="handleSelect(product)"
+            >
+              {{ product.title }}<span v-if="product.brand"> · {{ product.brand }}</span>
             </li>
           </ul>
         </div>
@@ -53,30 +62,68 @@
         </div>
         <div class="review-content">
           <label for="review-content">후기 내용</label>
-          <textarea name="review-content" id="review-content" v-model="reviewContent"></textarea>
+          <textarea
+            name="review-content"
+            id="review-content"
+            v-model="reviewContent"
+            maxlength="1000"
+          ></textarea>
           <p v-if="contentErrorMessage" class="error-message">{{ contentErrorMessage }}</p>
         </div>
-        <button type="submit">등록</button>
+        <p v-if="submitErrorMessage" class="error-message">{{ submitErrorMessage }}</p>
+        <button type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? '등록 중...' : '등록' }}
+        </button>
       </form>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import mockProducts from '@/data/mockProducts.js';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
+import { createReviewFlow, fetchCategories, searchProducts } from '@/services/reviewApi.js'
+
+const categories = ref([])
 const selectedCategory = ref('')
 const productSearchQuery = ref('')
 const selectedProduct = ref(null)
+const productSuggestions = ref([])
+const productSuggestionRefs = ref([])
+const highlightedProductIndex = ref(-1)
 const inputVideo = ref(null)
 const reviewRating = ref(null)
-
 const reviewContent = ref('')
+
+const isLoadingCategories = ref(false)
+const isSearchingProducts = ref(false)
+const isSubmitting = ref(false)
+const isSubmitted = ref(false)
+const { setHasUnsavedChanges } = useUnsavedChanges()
+
 const videoErrorMessage = ref('')
 const categoryErrorMessage = ref('')
 const productErrorMessage = ref('')
 const ratingErrorMessage = ref('')
 const contentErrorMessage = ref('')
+const submitErrorMessage = ref('')
+
+let productSearchTimer = null
+let productSearchRequestId = 0
+
+const hasUnsavedChanges = computed(
+  () =>
+    !isSubmitted.value &&
+    Boolean(
+      inputVideo.value ||
+        selectedCategory.value ||
+        productSearchQuery.value.trim() ||
+        selectedProduct.value ||
+        reviewRating.value !== null ||
+        reviewContent.value.trim(),
+    ),
+)
 
 const validateVideo = () => {
   if (!inputVideo.value) {
@@ -132,7 +179,7 @@ const validateContent = () => {
   return true
 }
 
-const submitReview = () => {
+const submitReview = async () => {
   const validVideo = validateVideo()
   const validCategory = validateCategory()
   const validProduct = validateProduct()
@@ -149,13 +196,23 @@ const submitReview = () => {
     return
   }
 
-  console.log('영상:', inputVideo.value.name)
-  console.log('카테고리:', selectedCategory.value)
-  console.log('제품:', selectedProduct.value.name)
-  console.log('별점:', reviewRating.value)
-  console.log('후기 내용:', reviewContent.value)
+  submitErrorMessage.value = ''
+  isSubmitting.value = true
 
-  alert('후기 등록 입력값 확인 완료')
+  try {
+    await createReviewFlow({
+      file: inputVideo.value,
+      productId: selectedProduct.value.id,
+      rating: reviewRating.value,
+      content: reviewContent.value.trim(),
+    })
+    isSubmitted.value = true
+    alert('후기가 등록되었습니다.')
+  } catch (error) {
+    submitErrorMessage.value = error.message || '후기 등록에 실패했습니다.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const uploadVideo = (event) => {
@@ -174,20 +231,157 @@ const handleProductSearchInput = () => {
   if (selectedProduct.value) {
     selectedProduct.value = null
   }
+
+  ++productSearchRequestId
+  productErrorMessage.value = ''
+  clearTimeout(productSearchTimer)
+
+  if (!productSearchQuery.value.trim()) {
+    productSuggestions.value = []
+    highlightedProductIndex.value = -1
+    return
+  }
+
+  productSearchTimer = setTimeout(() => {
+    loadProductSuggestions()
+  }, 300)
 }
 
-const filteredProduct = computed(() => {
-  if (!productSearchQuery.value) {
-    return []
+const loadProductSuggestions = async () => {
+  const requestId = ++productSearchRequestId
+  const searchQuery = productSearchQuery.value
+  isSearchingProducts.value = true
+
+  try {
+    const products = await searchProducts({
+      query: searchQuery,
+      categoryId: selectedCategory.value,
+    })
+
+    if (requestId === productSearchRequestId) {
+      productSuggestions.value = products
+      highlightedProductIndex.value = products.length > 0 ? 0 : -1
+    }
+  } catch (error) {
+    if (requestId === productSearchRequestId) {
+      productErrorMessage.value = error.message || '제품 검색에 실패했습니다.'
+    }
+  } finally {
+    if (requestId === productSearchRequestId) {
+      isSearchingProducts.value = false
+    }
   }
-  return mockProducts.filter(product =>
-    product.name.includes(productSearchQuery.value)
+}
+
+const handleSelect = (product) => {
+  clearTimeout(productSearchTimer)
+  ++productSearchRequestId
+  isSearchingProducts.value = false
+  selectedProduct.value = product
+  productSearchQuery.value = product.title
+  productSuggestions.value = []
+  highlightedProductIndex.value = -1
+}
+
+const setProductSuggestionRef = (element, index) => {
+  if (element) {
+    productSuggestionRefs.value[index] = element
+  }
+}
+
+const moveProductHighlight = (direction) => {
+  if (productSuggestions.value.length === 0) {
+    return
+  }
+
+  const lastIndex = productSuggestions.value.length - 1
+  const nextIndex = highlightedProductIndex.value + direction
+
+  if (nextIndex < 0) {
+    highlightedProductIndex.value = lastIndex
+  } else if (nextIndex > lastIndex) {
+    highlightedProductIndex.value = 0
+  } else {
+    highlightedProductIndex.value = nextIndex
+  }
+
+  productSuggestionRefs.value[highlightedProductIndex.value]?.scrollIntoView({
+    block: 'nearest',
+  })
+}
+
+const selectHighlightedProduct = () => {
+  const product = productSuggestions.value[highlightedProductIndex.value]
+
+  if (product) {
+    handleSelect(product)
+  }
+}
+
+const closeProductSuggestions = () => {
+  productSuggestions.value = []
+  highlightedProductIndex.value = -1
+}
+
+const handleCategoryChange = () => {
+  selectedProduct.value = null
+  productSearchQuery.value = ''
+  productSuggestions.value = []
+  highlightedProductIndex.value = -1
+  categoryErrorMessage.value = ''
+}
+
+const loadCategories = async () => {
+  isLoadingCategories.value = true
+
+  try {
+    categories.value = await fetchCategories()
+  } catch (error) {
+    categoryErrorMessage.value = error.message || '카테고리를 불러오지 못했습니다.'
+  } finally {
+    isLoadingCategories.value = false
+  }
+}
+
+watch(
+  [
+    inputVideo,
+    selectedCategory,
+    productSearchQuery,
+    selectedProduct,
+    reviewRating,
+    reviewContent,
+  ],
+  () => {
+    if (isSubmitted.value) {
+      isSubmitted.value = false
+    }
+  },
+)
+
+watch(
+  hasUnsavedChanges,
+  (value) => {
+    setHasUnsavedChanges(value)
+  },
+  { immediate: true },
+)
+
+onBeforeRouteLeave(() => {
+  if (!hasUnsavedChanges.value) {
+    return true
+  }
+
+  return window.confirm(
+    '지금 이동하면 작성한 정보가 초기화됩니다. 정말 이동하시겠습니까?',
   )
 })
-const handleSelect = (product) => {
-  selectedProduct.value = product
-  productSearchQuery.value = ''
-}
+
+onBeforeUnmount(() => {
+  setHasUnsavedChanges(false)
+})
+
+onMounted(loadCategories)
 </script>
 
 <style scoped>
@@ -208,12 +402,16 @@ const handleSelect = (product) => {
   margin: 8px 0 0;
   border: 1px solid #ccc;
   border-radius: 4px;
+  max-height: 210px;
+  overflow-y: auto;
 }
 .product-suggestions li {
-  padding: 8px;
+  min-height: 42px;
+  padding: 10px 8px;
   cursor: pointer;
 }
-.product-suggestions li:hover {
+.product-suggestions li:hover,
+.product-suggestion--active {
   background-color: #f0f0f0;
 }
 .review-area {
@@ -255,5 +453,9 @@ const handleSelect = (product) => {
 }
 .review-area button:hover {
   background-color: #059669;
+}
+.review-area button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>

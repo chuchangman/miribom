@@ -26,8 +26,9 @@ class ProductListView(APIView):
         parameters=[
             OpenApiParameter(name='q', description='제목 또는 브랜드 키워드 검색', required=False, type=str),
             OpenApiParameter(name='category', description='카테고리 ID 필터', required=False, type=int),
+            OpenApiParameter(name='limit', description='조회할 제품 수 (최대 40)', required=False, type=int),
+            OpenApiParameter(name='offset', description='조회 시작 위치', required=False, type=int),
         ],
-        responses=ProductSerializer(many=True),
     )
     def get(self, request):
         queryset = Product.objects.select_related('category_id').all()
@@ -44,9 +45,32 @@ class ProductListView(APIView):
         if q:
             queryset = queryset.filter(Q(title__icontains=q) | Q(brand__icontains=q))
 
-        queryset = queryset.order_by('lprice')
-        serializer = ProductSerializer(queryset, many=True)
-        return Response(serializer.data)
+        try:
+            limit = int(request.query_params.get('limit', 40))
+            offset = int(request.query_params.get('offset', 0))
+        except ValueError:
+            return Response(
+                {'detail': 'limit과 offset은 정수여야 합니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not (1 <= limit <= 40) or offset < 0:
+            return Response(
+                {'detail': 'limit은 1~40, offset은 0 이상이어야 합니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = queryset.order_by('lprice', 'id')
+        page = list(queryset[offset:offset + limit + 1])
+        has_next = len(page) > limit
+        products = page[:limit]
+        serializer = ProductSerializer(products, many=True)
+
+        return Response({
+            'results': serializer.data,
+            'next_offset': offset + limit if has_next else None,
+            'has_next': has_next,
+        })
 
 
 class ProductDetailView(APIView):

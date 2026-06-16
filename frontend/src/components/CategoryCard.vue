@@ -1,8 +1,8 @@
 <template>
   <div class="category-card" @click="goSearchCategory">
     <!-- 나중에 아이콘 넣을때 다시 살릴 부분 -->
-    <!-- <img src="" :alt="props.category" /> -->
-    <h3>{{ props.category }}</h3>
+    <!-- <img src="" :alt="props.category.name" /> -->
+    <h3>{{ props.category.name }}</h3>
   </div>
 </template>
 
@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps({
   category: {
-    type: String,
+    type: Object,
     required: true,
   },
 })
@@ -19,7 +19,7 @@ const props = defineProps({
 const router = useRouter()
 
 function goSearchCategory() {
-  router.push({ name: 'ProductSearch', query: { category: props.category } })
+  router.push({ name: 'ProductSearch', query: { category: props.category.id } })
 }
 </script>
 

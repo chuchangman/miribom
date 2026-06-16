@@ -8,7 +8,7 @@ from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from products.models import Product
@@ -169,6 +169,11 @@ class VideoView(APIView):
             return []
         return [IsAuthenticated()]
 
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return super().get_permissions()
+
     @extend_schema(
         summary='영상 피드 조회 (전체 또는 특정 제품)',
         parameters=[
@@ -268,6 +273,11 @@ class VideoView(APIView):
 
 class ReviewListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return super().get_permissions()
 
     @extend_schema(
         summary='영상 리뷰 목록 조회',
