@@ -12,12 +12,15 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from products.models import Product
-from .models import VideoUpload, Video, Review, Like
+from .models import VideoUpload, Video, Review, Like, Comment
 from .serializers import (
     VideoPresignedUrlSerializer,
     VideoUploadCompleteSerializer,
     VideoCreateSerializer,
     VideoFeedSerializer,
+    CommentCreateSerializer,
+    CommentUpdateSerializer,
+    CommentDetailSerializer,
     ReviewCreateSerializer,
     ReviewDetailSerializer,
 )
@@ -211,6 +214,7 @@ class VideoView(APIView):
         videos = qs[:20]
         serializer = VideoFeedSerializer(videos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
     @extend_schema(
         summary='영상 등록 (VideoUpload → Video, 제품 연결)',
@@ -443,3 +447,132 @@ class LikedVideoListView(APIView):
         videos = qs[:20]
         serializer = VideoFeedSerializer(videos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CommentListCreateView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return []
+        return [IsAuthenticated()]
+
+    @extend_schema(
+        summary='댓글 목록 조회',
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='마지막으로 받은 comment id (다음 페이지 조회용)'),
+        ],
+        responses={
+            200: CommentDetailSerializer(many=True),
+            404: {'description': '영상 없음'},
+        },
+    )
+    def get(self, request, video_id):
+        try:
+            Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        cursor = request.query_params.get('cursor')
+        if cursor is not None:
+            try:
+                cursor = int(cursor)
+            except ValueError:
+                return Response({'detail': 'cursor는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = Comment.objects.filter(
+            video_id=video_id
+        ).select_related('user_id').order_by('-id')
+
+        if cursor:
+            qs = qs.filter(id__lt=cursor)
+
+        comments = qs[:20]
+        serializer = CommentDetailSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='댓글 작성',
+        request=CommentCreateSerializer,
+        responses={
+            201: CommentDetailSerializer,
+            400: {'description': '유효하지 않은 요청'},
+            404: {'description': '영상 없음'},
+        },
+    )
+    def post(self, request, video_id):
+        try:
+            video = Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        comment = Comment.objects.create(
+            video_id=video,
+            user_id=request.user,
+            content=serializer.validated_data['content'],
+        )
+        comment.user_id = request.user
+        response_serializer = CommentDetailSerializer(comment)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CommentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, video_id, comment_id, user):
+        try:
+            Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return None, Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            comment = Comment.objects.select_related('user_id').get(id=comment_id, video_id=video_id)
+        except Comment.DoesNotExist:
+            return None, Response({'detail': '댓글을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if comment.user_id != user:
+            return None, Response({'detail': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        return comment, None
+
+    @extend_schema(
+        summary='댓글 수정',
+        request=CommentUpdateSerializer,
+        responses={
+            200: CommentDetailSerializer,
+            403: {'description': '권한 없음'},
+            404: {'description': '댓글 또는 영상 없음'},
+        },
+    )
+    def patch(self, request, video_id, comment_id):
+        comment, error = self.get_object(video_id, comment_id, request.user)
+        if error:
+            return error
+
+        serializer = CommentUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        comment.content = serializer.validated_data['content']
+        comment.save(update_fields=['content', 'updated_at'])
+
+        response_serializer = CommentDetailSerializer(comment)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='댓글 삭제',
+        responses={
+            204: None,
+            403: {'description': '권한 없음'},
+            404: {'description': '댓글 또는 영상 없음'},
+        },
+    )
+    def delete(self, request, video_id, comment_id):
+        comment, error = self.get_object(video_id, comment_id, request.user)
+        if error:
+            return error
+
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
