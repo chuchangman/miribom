@@ -172,11 +172,6 @@ class VideoView(APIView):
             return []
         return [IsAuthenticated()]
 
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return super().get_permissions()
-
     @extend_schema(
         summary='영상 피드 조회 (전체 또는 특정 제품)',
         parameters=[
