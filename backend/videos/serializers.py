@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
-from .models import Video, VideoUpload, Review
+from .models import Video, VideoUpload, Review, Comment
 
 
 class VideoPresignedUrlSerializer(serializers.Serializer):
@@ -16,6 +16,32 @@ class VideoUploadCompleteSerializer(serializers.Serializer):
 class VideoCreateSerializer(serializers.Serializer):
     video_upload_id = serializers.IntegerField()
     product_id = serializers.IntegerField()
+
+
+class CommentCreateSerializer(serializers.Serializer):
+    content = serializers.CharField(max_length=500)
+
+
+class CommentUpdateSerializer(serializers.Serializer):
+    content = serializers.CharField(max_length=500)
+
+
+class CommentDetailSerializer(serializers.ModelSerializer):
+    user_nickname = serializers.CharField(source='user_id.nickname')
+    user_profile_image = serializers.CharField(source='user_id.profile_image_url')
+
+    class Meta:
+        model = Comment
+        fields = [
+            'id',
+            'video_id',
+            'user_id',
+            'user_nickname',
+            'user_profile_image',
+            'content',
+            'created_at',
+            'updated_at',
+        ]
 
 
 class ReviewCreateSerializer(serializers.Serializer):
