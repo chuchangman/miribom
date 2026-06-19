@@ -14,6 +14,23 @@
           />
           <p v-if="videoErrorMessage" class="error-message">{{ videoErrorMessage }}</p>
         </div>
+        <div class="review-thumbnail">
+          <label for="review-thumbnail">AI 카테고리 예측용 썸네일</label>
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            name="review-thumbnail"
+            id="review-thumbnail"
+            @change="predictCategoryFromThumbnail"
+          />
+          <p v-if="isPredictingCategory">AI가 카테고리를 예측하는 중입니다.</p>
+          <p v-if="categoryPredictionMessage" class="prediction-message">
+            {{ categoryPredictionMessage }}
+          </p>
+          <p v-if="categoryPredictionErrorMessage" class="error-message">
+            {{ categoryPredictionErrorMessage }}
+          </p>
+        </div>
         <div class="review-category">
           <select v-model="selectedCategory" class="category-select" @change="handleCategoryChange">
             <option value="">선택</option>
@@ -83,6 +100,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
+import { predictCategoryFromImage } from '@/services/aiApi.js'
 import { createReviewFlow, fetchCategories, searchProducts } from '@/services/reviewApi.js'
 
 const categories = ref([])
@@ -98,6 +116,7 @@ const reviewContent = ref('')
 
 const isLoadingCategories = ref(false)
 const isSearchingProducts = ref(false)
+const isPredictingCategory = ref(false)
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 const { setHasUnsavedChanges } = useUnsavedChanges()
@@ -105,6 +124,8 @@ const { setHasUnsavedChanges } = useUnsavedChanges()
 const videoErrorMessage = ref('')
 const categoryErrorMessage = ref('')
 const productErrorMessage = ref('')
+const categoryPredictionMessage = ref('')
+const categoryPredictionErrorMessage = ref('')
 const ratingErrorMessage = ref('')
 const contentErrorMessage = ref('')
 const submitErrorMessage = ref('')
@@ -225,6 +246,47 @@ const uploadVideo = (event) => {
 
   inputVideo.value = video
   videoErrorMessage.value = ''
+}
+
+const predictCategoryFromThumbnail = async (event) => {
+  const thumbnail = event.target.files[0]
+  categoryPredictionMessage.value = ''
+  categoryPredictionErrorMessage.value = ''
+  categoryErrorMessage.value = ''
+
+  if (!thumbnail) {
+    return
+  }
+
+  if (categories.value.length === 0) {
+    categoryPredictionErrorMessage.value =
+      '카테고리 목록을 불러온 뒤 다시 시도하거나 직접 선택해주세요.'
+    return
+  }
+
+  isPredictingCategory.value = true
+
+  try {
+    const prediction = await predictCategoryFromImage(thumbnail)
+    const predictedCategory = categories.value.find(
+      (category) => category.ai_label === prediction.service_label,
+    )
+
+    if (!predictedCategory) {
+      categoryPredictionErrorMessage.value =
+        'AI 예측 결과와 일치하는 카테고리를 찾지 못했습니다. 카테고리를 직접 선택해주세요.'
+      return
+    }
+
+    selectedCategory.value = predictedCategory.id
+    categoryErrorMessage.value = ''
+    categoryPredictionMessage.value = `AI가 ${predictedCategory.name} 카테고리를 예측했습니다. 필요하면 직접 변경할 수 있습니다.`
+  } catch (error) {
+    categoryPredictionErrorMessage.value =
+      error.message || 'AI 카테고리 예측에 실패했습니다. 카테고리를 직접 선택해주세요.'
+  } finally {
+    isPredictingCategory.value = false
+  }
 }
 
 const handleProductSearchInput = () => {

@@ -1,4 +1,9 @@
-export const API_BASE_URL = 'http://localhost:8000/api'
+const env = import.meta.env || {}
+
+export const API_BASE_URL =
+  env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+export const AI_API_URL =
+  env.VITE_AI_API_URL || 'http://localhost:8001'
 export const AUTH_API_URL = `${API_BASE_URL}/auth`
 export const PRODUCTS_API_URL = `${API_BASE_URL}/products`
 export const VIDEOS_API_URL = `${API_BASE_URL}/videos`

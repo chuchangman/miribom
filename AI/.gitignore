@@ -26,6 +26,7 @@ data/staging/
 data/external_test/
 data/external_test_rejected/
 data/rejected/
+data/contact_sheets/
 
 # ── 메타데이터: 기본 제외, 필요한 기록만 추적 ────────────────────────────────
 data/metadata/*

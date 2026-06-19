@@ -27,7 +27,7 @@ export const useAuth = () => {
       })
 
       return response.ok
-    } catch (error) {
+    } catch {
       return false
     }
   }
@@ -56,7 +56,7 @@ export const useAuth = () => {
       isLogin.value = true
       user.value = data
       return true
-    } catch (error) {
+    } catch {
       resetAuth()
       return false
     } finally {
@@ -98,7 +98,7 @@ export const useAuth = () => {
       resetAuth()
       isAuthInitialized.value = true
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }
