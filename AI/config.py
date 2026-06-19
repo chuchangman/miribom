@@ -268,13 +268,13 @@ CHECKPOINTS_DIR = "checkpoints"
 
 # ── 서비스 대분류 매핑 ─────────────────────────────────────────────────────────────
 # 세부 학습 라벨 → 서비스 노출 카테고리
-# washer_dryer, wash_tower 는 서비스에서 모두 washing_drying 단일 카테고리로 노출
+# washer_dryer, wash_tower 는 서비스에서 모두 washer_dryer 단일 카테고리로 노출
 # wash_tower 항목은 Phase 2 이후 유효 (Phase 1에서는 참조되지 않음)
 SERVICE_LABEL_MAP = {
     # Phase 2
     "refrigerator":   "refrigerator",
-    "washer_dryer":   "washing_drying",
-    "wash_tower":     "washing_drying",
+    "washer_dryer":   "washer_dryer",
+    "wash_tower":     "washer_dryer",
     # Phase 3 추가
     "rice_cooker":    "kitchen_appliance",
     "microwave":      "kitchen_appliance",
@@ -290,5 +290,5 @@ SERVICE_LABEL_MAP = {
     "monitor":        "pc_peripheral",
     "keyboard":       "pc_peripheral",
     "mouse":          "pc_peripheral",
-    "beam_projector": "beam_projector",
+    "beam_projector": "projector",
 }

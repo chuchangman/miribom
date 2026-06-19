@@ -50,3 +50,9 @@ class ProductPaginationTests(APITestCase):
         self.assertEqual(len(response.data['results']), 5)
         self.assertIsNone(response.data['next_offset'])
         self.assertFalse(response.data['has_next'])
+
+    def test_category_list_includes_ai_label(self):
+        response = self.client.get('/api/products/categories/', HTTP_HOST='localhost')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]['ai_label'], 'vacuum')
