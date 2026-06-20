@@ -113,7 +113,7 @@ export const mapVideoFeedItem = (videoItem) => ({
   productPrice: videoItem.product_lprice || 0,
   userNickname: videoItem.user_nickname,
   likeCount: videoItem.like_count || 0,
-  isLiked: false,
+  isLiked: Boolean(videoItem.is_liked),
   review: null,
   isReviewLoaded: false,
 })

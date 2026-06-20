@@ -207,7 +207,7 @@ class VideoView(APIView):
             qs = qs.filter(id__lt=cursor)
 
         videos = qs[:20]
-        serializer = VideoFeedSerializer(videos, many=True)
+        serializer = VideoFeedSerializer(videos, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -440,7 +440,7 @@ class LikedVideoListView(APIView):
             qs = qs.filter(id__lt=cursor)
 
         videos = qs[:20]
-        serializer = VideoFeedSerializer(videos, many=True)
+        serializer = VideoFeedSerializer(videos, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

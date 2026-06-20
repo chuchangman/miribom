@@ -124,6 +124,7 @@ test('mapVideoFeedItem creates a video item without waiting for review data', as
     product_lprice: 10000,
     user_nickname: 'tester',
     like_count: 2,
+    is_liked: true,
   })
 
   assert.deepEqual(video, {
@@ -135,7 +136,7 @@ test('mapVideoFeedItem creates a video item without waiting for review data', as
     productPrice: 10000,
     userNickname: 'tester',
     likeCount: 2,
-    isLiked: false,
+    isLiked: true,
     review: null,
     isReviewLoaded: false,
   })
