@@ -71,7 +71,6 @@ import { useRouter } from 'vue-router'
 import VideoComments from '@/components/VideoComments.vue'
 import { useAuth } from '@/composables/useAuth'
 import {
-  fetchLikedVideos,
   fetchVideoReviews,
   fetchVideos,
   mapVideoFeedItem,
@@ -114,10 +113,6 @@ const loadVideos = async ({ cursor = null, append = false } = {}) => {
 
   videos.value = append ? [...videos.value, ...mappedVideos] : mappedVideos
   hasMoreVideos.value = videoItems.length === 20
-
-  if (isLogin.value) {
-    await markLikedVideos()
-  }
 }
 
 const loadCurrentReview = async (currentVideo) => {
@@ -167,19 +162,6 @@ const loadInitialVideos = async () => {
     errorMessage.value = error.message || '영상 후기를 불러오지 못했습니다.'
   } finally {
     isLoading.value = false
-  }
-}
-
-const markLikedVideos = async () => {
-  try {
-    const likedItems = await fetchLikedVideos()
-    const likedIds = new Set(likedItems.map((item) => item.id))
-
-    videos.value.forEach((item) => {
-      item.isLiked = likedIds.has(item.id)
-    })
-  } catch {
-    // The feed itself remains usable even if the liked-state lookup fails.
   }
 }
 
