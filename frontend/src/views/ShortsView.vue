@@ -10,7 +10,7 @@
         <video
           :key="video.id"
           :src="video.videoUrl"
-          :poster="video.productImage || ''"
+          :poster="video.thumbnailUrl || video.productImage || ''"
           controls
           playsinline
           preload="metadata"
@@ -263,32 +263,38 @@ onMounted(loadInitialVideos)
 
 <style scoped>
 .error-message {
-  color: red;
+  margin: 0;
+  color: var(--color-danger);
 }
 .shorts-layout {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 28px;
+  align-items: start;
 }
 .video-area {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 96px;
   align-items: center;
-  flex: 0.8;
-  justify-content: space-around;
-  flex-shrink: 0;
+  justify-content: center;
+  gap: 18px;
+  min-width: 0;
 }
 .video-frame {
   position: relative;
-  width: 360px;
+  width: min(100%, 420px);
   aspect-ratio: 9 / 16;
   overflow: hidden;
-  background-color: #eee;
+  border: 1px solid rgb(15 23 42 / 8%);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top, rgb(59 130 246 / 18%), transparent 30%),
+    #020617;
+  box-shadow: var(--shadow-lg);
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 10px;
-  max-height: 70vh;
+  max-height: 78vh;
 }
 .video-loading {
   position: absolute;
@@ -312,11 +318,11 @@ onMounted(loadInitialVideos)
   pointer-events: none;
 }
 .video-actions {
-  width: 200px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .like-action {
   display: inline-flex;
@@ -334,28 +340,78 @@ onMounted(loadInitialVideos)
 .like-action--active {
   background-color: #fff1f2;
 }
-.video-info {
-  margin-top: 20px;
-  flex-shrink: 0;
-  width: 360px;
-}
-.product-info {
-  border: 1px solid #ccc;
-  padding: 10px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+.video-actions button:not(.like-action) {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background-color: #fff;
+  padding: 10px 12px;
+  color: var(--color-text);
+  font-weight: 700;
   cursor: pointer;
 }
+.video-actions p {
+  margin: 6px 0 0;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+.video-info {
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  gap: 16px;
+}
+.product-info {
+  border: 1px solid var(--color-border);
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+.product-info p {
+  margin: 0;
+}
+.product-info p + p {
+  margin-top: 6px;
+}
 .product-info:hover {
-  background-color: #f9f9f9;
+  border-color: var(--color-primary-200);
 }
 .review-info {
-  border: 1px solid #ccc;
-  padding: 10px;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  padding: 16px;
+  border-radius: 20px;
+  background-color: #fff;
+  box-shadow: var(--shadow-md);
+}
+.review-info p {
+  margin: 0;
+}
+.review-info p + p {
+  margin-top: 8px;
 }
 .video-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+@media (max-width: 1080px) {
+  .shorts-layout {
+    grid-template-columns: 1fr;
+  }
+  .video-info {
+    max-width: 420px;
+  }
+}
+@media (max-width: 720px) {
+  .video-area {
+    grid-template-columns: 1fr;
+  }
+  .video-frame {
+    border-radius: 22px;
+  }
+  .video-info {
+    max-width: none;
+  }
 }
 </style>

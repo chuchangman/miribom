@@ -63,7 +63,7 @@
             <div class="review-card__video">
               <video
                 :src="review.videoUrl"
-                :poster="review.productImage || product.image"
+                :poster="review.thumbnailUrl || review.productImage || product.image"
                 preload="metadata"
                 muted
                 playsinline
@@ -98,7 +98,7 @@
           <div class="review-modal__video-frame">
             <video
               :src="selectedReview.videoUrl"
-              :poster="selectedReview.productImage || product?.image || ''"
+              :poster="selectedReview.thumbnailUrl || selectedReview.productImage || product?.image || ''"
               controls
               playsinline
               preload="metadata"
@@ -216,6 +216,7 @@ const loadReviewSummary = async (productId) => {
         return {
           ...review,
           videoUrl: video?.video_url || '',
+          thumbnailUrl: video?.thumbnail_url || video?.thumbnailUrl || video?.product_image || product.value?.image || '',
           productImage: video?.product_image || product.value?.image || '',
           productTitle: video?.product_title || product.value?.title || '',
           productPrice: video?.product_lprice || product.value?.lprice || 0,
@@ -335,7 +336,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .product-detail {
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 .error-message {
@@ -505,6 +506,7 @@ onBeforeUnmount(() => {
   border-radius: 24px;
   background-color: #fff;
   padding: 24px;
+  box-shadow: var(--shadow-md);
 }
 
 .section-header {
@@ -531,32 +533,37 @@ onBeforeUnmount(() => {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .review-card {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--gray-200);
   border-radius: 20px;
   background-color: #fff;
   padding: 10px;
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .review-card:hover {
   border-color: var(--color-primary-200);
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .review-card__video {
   overflow: hidden;
   border-radius: 14px;
   background-color: #0f172a;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 4.6;
 }
 
 .review-card__video video {
@@ -570,7 +577,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .review-card__header {
@@ -581,8 +588,8 @@ onBeforeUnmount(() => {
 
 .review-card__content p {
   margin: 0;
-  line-height: 1.45;
-  font-size: 0.88rem;
+  line-height: 1.4;
+  font-size: 0.84rem;
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -591,7 +598,7 @@ onBeforeUnmount(() => {
 
 .review-card__content small {
   color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 .review-modal {
@@ -608,7 +615,7 @@ onBeforeUnmount(() => {
   width: min(1100px, 100%);
   border-radius: 28px;
   background-color: #fff;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 30px 70px rgb(15 23 42 / 28%);
 }
 
@@ -625,8 +632,8 @@ onBeforeUnmount(() => {
 
 .review-modal__layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.7fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 0.95fr) minmax(300px, 0.65fr);
+  gap: 20px;
   align-items: start;
 }
 
@@ -635,7 +642,7 @@ onBeforeUnmount(() => {
   border-radius: 24px;
   background-color: #0f172a;
   aspect-ratio: 9 / 16;
-  max-height: 78vh;
+  max-height: 72vh;
 }
 
 .review-modal__video-frame video {
@@ -683,11 +690,11 @@ onBeforeUnmount(() => {
 
 .review-modal__summary {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid var(--color-border);
   border-radius: 20px;
   background-color: #fff;
-  padding: 18px;
+  padding: 16px;
 }
 
 .review-modal__summary-head {
