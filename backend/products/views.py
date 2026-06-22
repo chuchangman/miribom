@@ -1,4 +1,5 @@
 import json
+import hashlib
 from openai import OpenAI
 from django.conf import settings
 from django.core.cache import cache
@@ -388,8 +389,8 @@ class RecommendationView(APIView):
         if not categories:
             return Response({'detail': '유효한 카테고리가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        answers_key = str(sorted((k, str(sorted(v.items()))) for k, v in category_answers.items()))
-        cache_key = f'rec:{housing_type}:{area_size}:{sorted(category_ids)}:{budget}:{answers_key}'
+        raw_key = f'{housing_type}:{area_size}:{sorted(category_ids)}:{budget}:{sorted((k, sorted(v.items())) for k, v in category_answers.items())}'
+        cache_key = 'rec:' + hashlib.md5(raw_key.encode()).hexdigest()
         ai_result = cache.get(cache_key)
         if ai_result is None:
             ai_result = self._call_gms(housing_type, area_size, budget, categories, category_answers)
