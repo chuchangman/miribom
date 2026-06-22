@@ -19,6 +19,10 @@ load_dotenv()
 NAVER_CLIENT_ID = os.getenv('NAVER_CLIENT_ID')
 NAVER_CLIENT_SECRET = os.getenv('NAVER_CLIENT_SECRET')
 
+GMS_API_KEY = os.getenv('GMS_API_KEY')
+GMS_BASE_URL = 'https://gms.ssafy.io/gmsapi/api.openai.com/v1'
+GMS_MODEL = 'gpt-5.4-nano'
+
 R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID')
 R2_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
 R2_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
