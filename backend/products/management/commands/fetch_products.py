@@ -66,16 +66,16 @@ class Command(BaseCommand):
                 lprice_raw = item.get('lprice', '0')
                 lprice = int(lprice_raw) if lprice_raw else None
 
-                _, created = Product.objects.get_or_create(
+                _, created = Product.objects.update_or_create(
                     product_id=product_id,
                     defaults={
-                        'category_id': category,
                         'title': title,
                         'brand': item.get('brand', ''),
                         'image': item.get('image', ''),
                         'lprice': lprice,
                         'link': item.get('link', ''),
-                    }
+                    },
+                    create_defaults={'category_id': category},
                 )
                 if created:
                     created_count += 1
