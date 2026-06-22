@@ -1,14 +1,6 @@
 <template>
   <section class="review-page">
     <div class="review-shell">
-      <header class="review-hero">
-        <p class="review-eyebrow">Video Review</p>
-        <h1>제품 후기 등록</h1>
-        <p class="review-description">
-          짧은 사용 영상과 후기를 함께 올리고, 등록이 끝나면 제품 상세에서 바로 확인해보세요.
-        </p>
-      </header>
-
       <section class="review-area">
         <form class="review-form" @submit.prevent="submitReview">
           <div class="form-grid">
@@ -706,32 +698,6 @@ onMounted(loadCategories)
   margin: 0 auto;
 }
 
-.review-hero {
-  margin-bottom: var(--space-4);
-}
-
-.review-eyebrow {
-  margin: 0 0 var(--space-2);
-  color: var(--color-accent-600);
-  font-size: var(--font-size-caption);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.review-hero h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  line-height: 1.08;
-}
-
-.review-description {
-  max-width: 720px;
-  margin: var(--space-2) 0 0;
-  color: var(--color-text-secondary);
-  font-size: 0.96rem;
-}
-
 .review-area {
   border: 1px solid color-mix(in srgb, var(--color-primary) 10%, var(--color-border));
   border-radius: 28px;
@@ -739,7 +705,7 @@ onMounted(loadCategories)
     radial-gradient(circle at top right, rgb(59 130 246 / 10%), transparent 30%),
     linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: var(--shadow-lg);
-  padding: clamp(18px, 3vw, 28px);
+  padding: clamp(22px, 3.4vw, 34px);
 }
 
 .review-form {
@@ -749,7 +715,7 @@ onMounted(loadCategories)
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 22px;
   align-items: stretch;
 }
 
@@ -757,7 +723,7 @@ onMounted(loadCategories)
   border: 1px solid var(--color-border);
   border-radius: 24px;
   background-color: rgb(255 255 255 / 88%);
-  padding: 20px;
+  padding: 24px;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -780,28 +746,28 @@ onMounted(loadCategories)
 }
 
 .section-heading {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .section-heading h2 {
   margin: 0 0 var(--space-2);
-  font-size: 1.25rem;
+  font-size: 1.34rem;
 }
 
 .section-heading p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 0.92rem;
+  font-size: 0.96rem;
 }
 
 .upload-field {
   display: grid;
   grid-template-rows: auto 1fr;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   height: 100%;
   margin-bottom: var(--space-3);
-  padding: 14px;
+  padding: 16px;
   border: 1px dashed var(--color-primary-200);
   border-radius: 18px;
   background-color: var(--color-primary-light);
@@ -820,7 +786,7 @@ onMounted(loadCategories)
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 44px;
+  min-height: 48px;
 }
 
 .upload-field__title {
@@ -832,7 +798,7 @@ onMounted(loadCategories)
   border: none;
   border-radius: 999px;
   background-color: var(--color-primary);
-  padding: 8px 12px;
+  padding: 10px 14px;
   color: #fff;
   font-weight: 700;
   cursor: pointer;
@@ -852,25 +818,25 @@ onMounted(loadCategories)
   justify-content: center;
   gap: 4px;
   flex: 1;
-  min-height: 260px;
+  min-height: 300px;
   border: 1px dashed rgb(59 130 246 / 22%);
   border-radius: 16px;
   background: rgb(255 255 255 / 54%);
   color: var(--color-text-secondary);
   text-align: center;
-  padding: 20px;
+  padding: 24px;
   justify-items: center;
 }
 
 .upload-field__dropzone strong {
   color: var(--color-text);
-  font-size: 0.98rem;
+  font-size: 1.04rem;
   line-height: 1.3;
   margin: 0;
 }
 
 .upload-field__dropzone span {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   line-height: 1.25;
   margin: 0;
 }
@@ -895,7 +861,7 @@ onMounted(loadCategories)
 .thumbnail-preview {
   display: flex;
   flex: 1;
-  min-height: 260px;
+  min-height: 300px;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: 16px;
@@ -935,12 +901,12 @@ onMounted(loadCategories)
 }
 
 .field-group + .field-group {
-  margin-top: var(--space-4);
+  margin-top: var(--space-5);
 }
 
 .field-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 700;
   color: var(--color-text);
 }
@@ -952,7 +918,7 @@ onMounted(loadCategories)
   border: 1px solid var(--color-border-strong);
   border-radius: 14px;
   background-color: #fff;
-  padding: 12px 14px;
+  padding: 14px 16px;
   color: var(--color-text);
 }
 
@@ -964,7 +930,7 @@ onMounted(loadCategories)
 }
 
 .field-group textarea {
-  min-height: 132px;
+  min-height: 156px;
   resize: vertical;
 }
 
@@ -1098,11 +1064,11 @@ onMounted(loadCategories)
 
 .submit-button {
   width: 100%;
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
   border: none;
   border-radius: 16px;
   background: linear-gradient(135deg, #0f766e 0%, #0f9d7a 100%);
-  padding: 14px 18px;
+  padding: 16px 18px;
   color: #fff;
   font-weight: 800;
   font-size: 1rem;

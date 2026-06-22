@@ -130,6 +130,7 @@ test('mapVideoFeedItem creates a video item without waiting for review data', as
   assert.deepEqual(video, {
     id: 9,
     videoUrl: 'https://example.com/video.mp4',
+    thumbnailUrl: 'https://example.com/product.jpg',
     productId: 3,
     productName: '테스트 제품',
     productImage: 'https://example.com/product.jpg',

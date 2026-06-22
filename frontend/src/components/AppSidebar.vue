@@ -20,7 +20,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/products')"
       >
-        둘러보기
+        검색
       </RouterLink>
       <RouterLink
         to="/shorts"

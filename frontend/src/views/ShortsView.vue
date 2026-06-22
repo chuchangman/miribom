@@ -1,5 +1,4 @@
 <template>
-  <h1>쇼츠페이지</h1>
   <p v-if="isLoading">영상 후기를 불러오는 중입니다.</p>
   <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
   <p v-else-if="!video">등록된 영상 후기가 없습니다.</p>
@@ -33,36 +32,55 @@
       <div class="video-actions">
         <button
           type="button"
-          class="like-action"
-          :class="{ 'like-action--active': video.isLiked }"
+          class="shorts-action"
+          :class="{ 'shorts-action--active': video.isLiked }"
           :disabled="isLikePending"
           @click="handleToggleLike"
         >
-          {{ video.isLiked ? '♥ 좋아요' : '♡ 좋아요' }}
-          <span>{{ video.likeCount }}</span>
+          <span>{{ video.isLiked ? '♥' : '♡' }}</span>
+          <strong>{{ video.likeCount }}</strong>
+        </button>
+        <button
+          type="button"
+          class="shorts-action"
+          :class="{ 'shorts-action--active': isCommentPanelOpen }"
+          @click="toggleCommentPanel"
+        >
+          <span>💬</span>
+          <strong>댓글</strong>
+        </button>
+        <button type="button" class="shorts-action" @click="handleShare">
+          <span>↗</span>
+          <strong>공유</strong>
         </button>
         <button type="button" @click="goPrevVideo">이전</button>
         <button type="button" :disabled="isLoadingMore" @click="goNextVideo">
           {{ isLoadingMore ? '불러오는 중...' : '다음' }}
         </button>
-        <p>{{ currentIndex + 1 }} / {{ videos.length }}</p>
       </div>
     </div>
-    <div class="video-info">
+    <aside class="watch-panel">
       <div class="product-info" @click="goProductDetail(video.productId)">
-        <p>제품명 : {{ video.productName }}</p>
-        <p>가격 : {{ video.productPrice.toLocaleString() }}원</p>
+        <p class="product-info__label">제품 정보</p>
+        <p class="product-info__name">{{ video.productName }}</p>
+        <p class="product-info__price">{{ video.productPrice.toLocaleString() }}원</p>
       </div>
-      <p v-if="isReviewLoading">후기 내용을 불러오는 중입니다.</p>
-      <p v-else-if="reviewErrorMessage" class="error-message">{{ reviewErrorMessage }}</p>
-      <div v-else-if="video.review" class="review-info">
-        <p>평점 : {{ video.review.rating }} / 5</p>
-        <p>작성자 : {{ video.review.userNickname }}</p>
-        <p>후기내용 : {{ video.review.content }}</p>
+
+      <div class="review-panel-section">
+        <p v-if="isReviewLoading">후기 내용을 불러오는 중입니다.</p>
+        <p v-else-if="reviewErrorMessage" class="error-message">{{ reviewErrorMessage }}</p>
+        <div v-else-if="video.review" class="review-info">
+          <p>평점 : {{ video.review.rating }} / 5</p>
+          <p>작성자 : {{ video.review.userNickname }}</p>
+          <p>후기내용 : {{ video.review.content }}</p>
+        </div>
+        <p v-else-if="video.isReviewLoaded">등록된 리뷰 내용이 없습니다.</p>
       </div>
-      <p v-else-if="video.isReviewLoaded">등록된 리뷰 내용이 없습니다.</p>
-      <VideoComments :video-id="video.id" />
-    </div>
+
+      <div v-if="isCommentPanelOpen" class="comments-panel-section">
+        <VideoComments :video-id="video.id" />
+      </div>
+    </aside>
   </section>
 </template>
 
@@ -90,6 +108,7 @@ const hasMoreVideos = ref(true)
 const errorMessage = ref('')
 const isVideoLoading = ref(true)
 const isReviewLoading = ref(false)
+const isCommentPanelOpen = ref(false)
 const reviewErrorMessage = ref('')
 let reviewRequestId = 0
 
@@ -190,6 +209,14 @@ const handleToggleLike = async () => {
   }
 }
 
+const toggleCommentPanel = () => {
+  isCommentPanelOpen.value = !isCommentPanelOpen.value
+}
+
+const handleShare = () => {
+  alert('공유 기능은 준비 중입니다.')
+}
+
 const handleWheel = async (event) => {
   if (isScrolling.value) {
     return
@@ -253,6 +280,7 @@ watch(
   video,
   (currentVideo) => {
     isVideoLoading.value = true
+    isCommentPanelOpen.value = false
     loadCurrentReview(currentVideo)
   },
   { immediate: true },
@@ -268,13 +296,13 @@ onMounted(loadInitialVideos)
 }
 .shorts-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 28px;
   align-items: start;
 }
 .video-area {
   display: grid;
-  grid-template-columns: minmax(280px, 420px) 96px;
+  grid-template-columns: minmax(320px, min(48vw, 520px)) 96px;
   align-items: center;
   justify-content: center;
   gap: 18px;
@@ -282,7 +310,7 @@ onMounted(loadInitialVideos)
 }
 .video-frame {
   position: relative;
-  width: min(100%, 420px);
+  width: min(100%, 520px);
   aspect-ratio: 9 / 16;
   overflow: hidden;
   border: 1px solid rgb(15 23 42 / 8%);
@@ -294,7 +322,8 @@ onMounted(loadInitialVideos)
   display: flex;
   justify-content: center;
   align-items: center;
-  max-height: 78vh;
+  height: min(86vh, 820px);
+  max-height: 86vh;
 }
 .video-loading {
   position: absolute;
@@ -324,74 +353,118 @@ onMounted(loadInitialVideos)
   align-items: center;
   gap: 10px;
 }
-.like-action {
+.shorts-action {
+  width: 62px;
+  min-height: 62px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border: 1px solid #fecdd3;
-  border-radius: 999px;
-  background-color: #fff;
-  color: #be123c;
-  padding: 9px 12px;
-  font-weight: 700;
+  gap: 4px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  color: var(--color-text);
+  padding: 8px;
+  font-weight: 800;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
-.like-action--active {
+.shorts-action:hover:not(:disabled) {
+  border-color: var(--color-primary-200);
+  background-color: #eaf2ff;
+  transform: translateY(-1px);
+}
+.shorts-action span {
+  font-size: 1.28rem;
+  line-height: 1;
+}
+.shorts-action strong {
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+.shorts-action--active {
+  border-color: #fecdd3;
   background-color: #fff1f2;
+  color: #be123c;
 }
-.video-actions button:not(.like-action) {
+.video-actions > button:not(.shorts-action) {
   width: 100%;
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background-color: #fff;
-  padding: 10px 12px;
+  padding: 11px 12px;
   color: var(--color-text);
   font-weight: 700;
   cursor: pointer;
 }
-.video-actions p {
-  margin: 6px 0 0;
-  color: var(--color-text-secondary);
-  font-weight: 700;
-}
-.video-info {
+.watch-panel {
   min-width: 0;
   width: 100%;
-  display: grid;
-  gap: 16px;
+  height: min(86vh, 820px);
+  min-height: 0;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background-color: #fff;
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
 }
 .product-info {
-  border: 1px solid var(--color-border);
-  padding: 16px;
-  border-radius: 20px;
-  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
-  box-shadow: var(--shadow-md);
+  padding: 18px;
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
 }
 .product-info p {
   margin: 0;
 }
-.product-info p + p {
-  margin-top: 6px;
+.product-info__label {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 6px !important;
+}
+.product-info__name {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.product-info__price {
+  margin-top: 8px !important;
+  font-size: 1rem;
+  font-weight: 800;
 }
 .product-info:hover {
-  border-color: var(--color-primary-200);
+  background-color: var(--gray-50);
+}
+.review-panel-section {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border);
 }
 .review-info {
-  border: 1px solid var(--color-border);
-  padding: 16px;
-  border-radius: 20px;
-  background-color: #fff;
-  box-shadow: var(--shadow-md);
+  display: grid;
+  gap: 8px;
 }
 .review-info p {
   margin: 0;
 }
-.review-info p + p {
-  margin-top: 8px;
+.comments-panel-section {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px 18px;
 }
-.video-actions button:disabled {
+.video-actions button:disabled,
+.shorts-action:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -399,8 +472,10 @@ onMounted(loadInitialVideos)
   .shorts-layout {
     grid-template-columns: 1fr;
   }
-  .video-info {
-    max-width: 420px;
+  .watch-panel {
+    max-width: 520px;
+    min-height: auto;
+    max-height: none;
   }
 }
 @media (max-width: 720px) {
@@ -410,7 +485,7 @@ onMounted(loadInitialVideos)
   .video-frame {
     border-radius: 22px;
   }
-  .video-info {
+  .watch-panel {
     max-width: none;
   }
 }

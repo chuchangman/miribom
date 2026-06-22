@@ -1,5 +1,4 @@
 <template>
-  <h1>제품검색페이지</h1>
   <div class="search-controls">
     <select v-model="selectedCategory" class="category-select" @change="changeCategory">
       <option value="">전체</option>
@@ -343,18 +342,22 @@ onBeforeUnmount(() => {
 .search-form {
   flex: 1;
   display: flex;
-  border: 1px solid #ccc;
-  padding: 0.5em;
-  border-radius: 8px;
   justify-content: space-between;
+  gap: 0.5em;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background-color: #fff;
+  padding: 0.5em 0.75em;
 }
 .search-input {
+  min-width: 0;
   flex: 1;
-  border: 0px;
+  border: 0;
+  background-color: transparent;
   padding: 0.5em;
+  outline: none;
   font-size: 1em;
   width: 200px;
-  margin-right: 0.5em;
 }
 .text-button {
   border: none;

@@ -2,79 +2,81 @@
   <section class="comments">
     <header class="comments-header">
       <h3>댓글</h3>
-      <button type="button" :disabled="isLoading" @click="loadComments">
-        새로고침
-      </button>
     </header>
+
+    <div class="comments-body">
+      <p v-if="isLoading">댓글을 불러오는 중입니다.</p>
+      <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-else-if="comments.length === 0">아직 댓글이 없습니다.</p>
+
+      <ul v-else class="comment-list">
+        <li v-for="comment in comments" :key="comment.id" class="comment-item">
+          <div class="comment-meta">
+            <strong>{{ comment.user_nickname }}</strong>
+            <span>{{ formatDate(comment.created_at) }}</span>
+          </div>
+
+          <template v-if="editingCommentId === comment.id">
+            <textarea v-model="editingContent" maxlength="500"></textarea>
+            <div class="comment-actions">
+              <button
+                type="button"
+                :disabled="pendingCommentId === comment.id || !editingContent.trim()"
+                @click="saveEdit(comment)"
+              >
+                저장
+              </button>
+              <button type="button" @click="cancelEdit">취소</button>
+            </div>
+          </template>
+
+          <template v-else>
+            <p>{{ comment.content }}</p>
+            <div v-if="isMyComment(comment)" class="comment-actions">
+              <button type="button" @click="startEdit(comment)">수정</button>
+              <button
+                type="button"
+                :disabled="pendingCommentId === comment.id"
+                @click="removeComment(comment)"
+              >
+                삭제
+              </button>
+            </div>
+          </template>
+        </li>
+      </ul>
+      <button
+        v-if="hasMoreComments"
+        type="button"
+        class="load-more-comments"
+        :disabled="isLoadingMore"
+        @click="loadMoreComments"
+      >
+        {{ isLoadingMore ? '불러오는 중...' : '댓글 더보기' }}
+      </button>
+    </div>
 
     <form v-if="isLogin" class="comment-form" @submit.prevent="submitComment">
       <textarea
+        ref="commentInput"
         v-model="newComment"
+        rows="1"
         maxlength="500"
         placeholder="댓글을 입력해주세요."
+        @input="resizeCommentInput"
       ></textarea>
       <button type="submit" :disabled="isSubmitting || !newComment.trim()">
-        {{ isSubmitting ? '작성 중...' : '댓글 작성' }}
+        {{ isSubmitting ? '작성 중...' : '작성' }}
       </button>
     </form>
     <p v-else class="login-guide">
       댓글을 작성하려면 <RouterLink to="/login">로그인</RouterLink>이 필요합니다.
     </p>
-
-    <p v-if="isLoading">댓글을 불러오는 중입니다.</p>
-    <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-    <p v-else-if="comments.length === 0">아직 댓글이 없습니다.</p>
-
-    <ul v-else class="comment-list">
-      <li v-for="comment in comments" :key="comment.id" class="comment-item">
-        <div class="comment-meta">
-          <strong>{{ comment.user_nickname }}</strong>
-          <span>{{ formatDate(comment.created_at) }}</span>
-        </div>
-
-        <template v-if="editingCommentId === comment.id">
-          <textarea v-model="editingContent" maxlength="500"></textarea>
-          <div class="comment-actions">
-            <button
-              type="button"
-              :disabled="pendingCommentId === comment.id || !editingContent.trim()"
-              @click="saveEdit(comment)"
-            >
-              저장
-            </button>
-            <button type="button" @click="cancelEdit">취소</button>
-          </div>
-        </template>
-
-        <template v-else>
-          <p>{{ comment.content }}</p>
-          <div v-if="isMyComment(comment)" class="comment-actions">
-            <button type="button" @click="startEdit(comment)">수정</button>
-            <button
-              type="button"
-              :disabled="pendingCommentId === comment.id"
-              @click="removeComment(comment)"
-            >
-              삭제
-            </button>
-          </div>
-        </template>
-      </li>
-    </ul>
-    <button
-      v-if="hasMoreComments"
-      type="button"
-      class="load-more-comments"
-      :disabled="isLoadingMore"
-      @click="loadMoreComments"
-    >
-      {{ isLoadingMore ? '불러오는 중...' : '댓글 더보기' }}
-    </button>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import {
@@ -99,6 +101,7 @@ const hasMoreComments = ref(true)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const newComment = ref('')
+const commentInput = ref(null)
 const editingCommentId = ref(null)
 const editingContent = ref('')
 const pendingCommentId = ref(null)
@@ -140,6 +143,16 @@ const loadMoreComments = async () => {
   })
 }
 
+const resizeCommentInput = () => {
+  const textarea = commentInput.value
+  if (!textarea) {
+    return
+  }
+
+  textarea.style.height = 'auto'
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 112)}px`
+}
+
 const submitComment = async () => {
   const content = newComment.value.trim()
   if (!content || isSubmitting.value) {
@@ -153,6 +166,8 @@ const submitComment = async () => {
     const comment = await createVideoComment(props.videoId, content)
     comments.value = [comment, ...comments.value]
     newComment.value = ''
+    await nextTick()
+    resizeCommentInput()
   } catch (error) {
     errorMessage.value = error.message || '댓글을 작성하지 못했습니다.'
   } finally {
@@ -226,19 +241,29 @@ watch(
     newComment.value = ''
     cancelEdit()
     loadComments()
+    nextTick(resizeCommentInput)
   },
 )
 
-onMounted(loadComments)
+watch(newComment, () => {
+  nextTick(resizeCommentInput)
+})
+
+onMounted(() => {
+  loadComments()
+  nextTick(resizeCommentInput)
+})
 </script>
 
 <style scoped>
 .comments {
-  margin-top: 20px;
-  border: 1px solid #dbe4f0;
-  border-radius: 14px;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background-color: #fff;
-  padding: 14px;
 }
 
 .comments-header,
@@ -249,21 +274,28 @@ onMounted(loadComments)
 }
 
 .comments-header {
+  flex-shrink: 0;
   justify-content: space-between;
+  padding-bottom: 8px;
 }
 
 .comments h3 {
   margin: 0;
 }
 
-.comment-form,
+.comments-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 2px 12px;
+}
+
 .comment-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.comment-form textarea,
 .comment-item textarea {
   width: 100%;
   min-height: 72px;
@@ -274,7 +306,6 @@ onMounted(loadComments)
 }
 
 .comment-form button,
-.comments-header button,
 .comment-actions button,
 .load-more-comments {
   border: 1px solid #cbd5e1;
@@ -285,16 +316,53 @@ onMounted(loadComments)
 }
 
 .comment-form button:disabled,
-.comments-header button:disabled,
 .comment-actions button:disabled,
 .load-more-comments:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
+.comment-form {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.comment-form textarea {
+  flex: 1;
+  min-height: 42px;
+  max-height: 112px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 11px 14px;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.4;
+}
+
+.comment-form button {
+  min-width: 54px;
+  min-height: 42px;
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+}
+
 .login-guide a {
   color: #2563eb;
   font-weight: 700;
+}
+
+.login-guide {
+  flex-shrink: 0;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .error-message {
@@ -306,7 +374,7 @@ onMounted(loadComments)
   flex-direction: column;
   gap: 12px;
   list-style: none;
-  margin: 14px 0 0;
+  margin: 0;
   padding: 0;
 }
 

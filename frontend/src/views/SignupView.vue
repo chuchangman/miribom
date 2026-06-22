@@ -4,11 +4,9 @@
       <div class="signup-panel">
         <div class="signup-brand">
           <img :src="logoImage" alt="미리봄 로고" class="signup-brand__logo" />
-          <p class="signup-brand__description">실제 사용 영상으로 확인하는 전자제품 후기</p>
         </div>
 
         <div class="signup-copy">
-          <h1>미리봄 회원가입</h1>
           <p>사용 중인 제품과 실제 후기를 더 편하게 기록하고, 맞춤 추천까지 이어서 받아보세요.</p>
         </div>
 
@@ -267,7 +265,7 @@ const signup = async () => {
   min-height: calc(100vh - 120px);
   display: grid;
   place-items: center;
-  padding: 32px 20px 56px;
+  padding: 20px 20px 32px;
 }
 
 .signup-shell {
@@ -281,15 +279,15 @@ const signup = async () => {
   background:
     radial-gradient(circle at top right, rgb(59 130 246 / 10%), transparent 34%),
     linear-gradient(180deg, rgb(255 255 255 / 98%), rgb(248 250 252 / 98%));
-  padding: clamp(30px, 4vw, 40px);
+  padding: clamp(24px, 3vw, 32px);
   box-shadow: var(--shadow-lg);
 }
 
 .signup-brand {
   display: grid;
   justify-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 8px;
+  margin-bottom: 14px;
   text-align: center;
 }
 
@@ -307,7 +305,7 @@ const signup = async () => {
 }
 
 .signup-copy {
-  margin-bottom: 28px;
+  margin-bottom: 18px;
   text-align: center;
 }
 
@@ -325,7 +323,7 @@ const signup = async () => {
 
 .signup-form {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .profile-field label,
@@ -358,6 +356,7 @@ const signup = async () => {
 
 .profile-upload-button {
   width: fit-content;
+  margin-left: auto;
   margin-bottom: 0;
   border-radius: 999px;
   background-color: var(--color-primary-light);

@@ -1,6 +1,5 @@
 <template>
   <section>
-    <h1>좋아요페이지</h1>
     <h3>좋아요한 영상 후기만 볼 수 있습니다.</h3>
     <p v-if="isLoading">좋아요한 영상을 불러오는 중입니다.</p>
     <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>

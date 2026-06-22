@@ -1,5 +1,4 @@
 <template>
-  <h1>프로필 편집</h1>
   <form class="profile-edit-form" @submit.prevent="saveProfile">
     <label for="nickname">닉네임</label>
     <input
