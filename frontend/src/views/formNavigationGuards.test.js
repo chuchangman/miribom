@@ -76,3 +76,14 @@ test('ReviewCreateView predicts category from a separate thumbnail image', async
   assert.match(source, /카테고리를 직접 선택해주세요/)
   assert.match(source, /필요하면 직접 변경할 수 있습니다/)
 })
+
+test('ProfileEditView saves nickname through auth state', async () => {
+  const { descriptor, source } = await readView('./ProfileEditView.vue')
+  const template = descriptor.template.content
+
+  assert.match(template, /@submit\.prevent="saveProfile"/)
+  assert.match(source, /updateProfile/)
+  assert.match(source, /router\.push\('\/mypage'\)/)
+  assert.doesNotMatch(source, /console\.log/)
+  assert.doesNotMatch(source, /프로필 저장 API 연결 전/)
+})

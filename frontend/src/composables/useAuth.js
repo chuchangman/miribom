@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { AUTH_API_URL } from '@/config/api'
+import { updateMyProfile } from '@/services/authApi.js'
 
 const isLogin = ref(false)
 const user = ref(null)
@@ -103,6 +104,14 @@ export const useAuth = () => {
     }
   }
 
+  const updateProfile = async ({ nickname }) => {
+    const updatedUser = await updateMyProfile({ nickname })
+    user.value = updatedUser
+    isLogin.value = true
+    isAuthInitialized.value = true
+    return updatedUser
+  }
+
   return {
     checkAuth,
     isLogin,
@@ -110,5 +119,6 @@ export const useAuth = () => {
     user,
     login,
     logout,
+    updateProfile,
   }
 }
