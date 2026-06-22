@@ -10,6 +10,7 @@
         <video
           :key="video.id"
           :src="video.videoUrl"
+          :poster="video.productImage || ''"
           controls
           playsinline
           preload="metadata"
