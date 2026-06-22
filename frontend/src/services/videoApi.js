@@ -107,6 +107,7 @@ export const deleteVideoComment = async (videoId, commentId) => {
 export const mapVideoFeedItem = (videoItem) => ({
   id: videoItem.id,
   videoUrl: videoItem.video_url,
+  thumbnailUrl: videoItem.thumbnail_url || videoItem.thumbnailUrl || videoItem.product_image || '',
   productId: videoItem.product_id,
   productName: videoItem.product_title,
   productImage: videoItem.product_image,

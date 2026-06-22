@@ -12,7 +12,7 @@
     </button>
     <video
       :src="video.videoUrl"
-      :poster="video.productImage || ''"
+      :poster="video.thumbnailUrl || video.productImage || ''"
       class="video-preview"
       controls
       playsinline

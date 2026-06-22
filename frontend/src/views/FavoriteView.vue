@@ -1,5 +1,4 @@
 <template>
-  <h1>즐겨찾기페이지</h1>
   <p v-if="isLoading">즐겨찾기를 불러오는 중입니다.</p>
   <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
   <p v-else-if="favoriteProducts.length === 0">즐겨찾기한 제품이 없습니다.</p>

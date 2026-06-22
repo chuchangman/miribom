@@ -1,7 +1,5 @@
 <template>
   <section class="mypage">
-    <h1>마이페이지</h1>
-
     <section class="profile-card">
       <img
         class="profile-image"
