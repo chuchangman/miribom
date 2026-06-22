@@ -444,6 +444,70 @@ class LikedVideoListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class MyVideoListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='내가 올린 영상 목록',
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='마지막으로 받은 video id (다음 페이지 조회용)'),
+        ],
+        responses={200: VideoFeedSerializer(many=True)},
+    )
+    def get(self, request):
+        cursor = request.query_params.get('cursor')
+        if cursor is not None:
+            try:
+                cursor = int(cursor)
+            except ValueError:
+                return Response({'detail': 'cursor는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = Video.objects.filter(
+            user_id=request.user, is_deleted=False
+        ).select_related(
+            'video_upload_id', 'user_id', 'product_id'
+        ).annotate(like_count=Count('like')).order_by('-id')
+
+        if cursor:
+            qs = qs.filter(id__lt=cursor)
+
+        videos = qs[:20]
+        serializer = VideoFeedSerializer(videos, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MyReviewListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='내가 작성한 리뷰 목록',
+        parameters=[
+            OpenApiParameter(name='cursor', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, description='마지막으로 받은 review id (다음 페이지 조회용)'),
+        ],
+        responses={200: ReviewDetailSerializer(many=True)},
+    )
+    def get(self, request):
+        cursor = request.query_params.get('cursor')
+        if cursor is not None:
+            try:
+                cursor = int(cursor)
+            except ValueError:
+                return Response({'detail': 'cursor는 정수여야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = Review.objects.filter(
+            user_id=request.user, is_deleted=False
+        ).select_related(
+            'user_id', 'video_id__product_id'
+        ).order_by('-id')
+
+        if cursor:
+            qs = qs.filter(id__lt=cursor)
+
+        reviews = qs[:20]
+        serializer = ReviewDetailSerializer(reviews, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class CommentListCreateView(APIView):
     def get_permissions(self):
         if self.request.method == 'GET':
