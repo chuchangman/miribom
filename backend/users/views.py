@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
-from .serializers import SignupSerializer, LoginSerializer
+from .serializers import SignupSerializer, LoginSerializer, ProfileUpdateSerializer
 
 FRONTEND_URL = 'http://localhost:5173'
 
@@ -165,13 +165,42 @@ class CookieTokenRefreshView(APIView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
-        return Response({
+    def _get_email(self, user):
+        email_user = EmailUser.objects.filter(user_id=user).first()
+        if email_user:
+            return email_user.email
+
+        social_user = SocialUser.objects.filter(user_id=user).first()
+        if social_user:
+            return social_user.email
+
+        return ''
+
+    def _serialize_user(self, user):
+        return {
             'id': user.id,
             'nickname': user.nickname,
+            'email': self._get_email(user),
             'profile_image_url': user.profile_image_url,
-        })
+            'housing_type': user.housing_type,
+            'area_size': user.area_size,
+        }
+
+    def get(self, request):
+        user = request.user
+        return Response(self._serialize_user(user))
+
+    @extend_schema(request=ProfileUpdateSerializer, responses={200: None, 400: None}, summary='내 프로필 수정')
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        user.nickname = serializer.validated_data['nickname']
+        user.save(update_fields=['nickname'])
+
+        return Response(self._serialize_user(user), status=status.HTTP_200_OK)
 
 
 # ── 네이버 ──────────────────────────────────────────────────────────────

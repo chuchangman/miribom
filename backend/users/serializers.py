@@ -10,3 +10,7 @@ class SignupSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+
+
+class ProfileUpdateSerializer(serializers.Serializer):
+    nickname = serializers.CharField(max_length=50, min_length=3)

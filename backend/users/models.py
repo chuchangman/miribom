@@ -3,8 +3,8 @@ from django.db import models
 # Create your models here.
 class User(models.Model):
     nickname = models.CharField(max_length=50, null=False)
-    profile_image_url = models.CharField(max_length=512)
-    housing_type = models.CharField(max_length=20)
+    profile_image_url = models.CharField(max_length=512, default='')
+    housing_type = models.CharField(max_length=20, default='')
     area_size = models.IntegerField(null=True, blank=True)
     living_updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
