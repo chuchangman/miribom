@@ -5,7 +5,7 @@ from .models import Category, Product, Bookmark
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'display_order']
+        fields = ['id', 'name', 'slug', 'display_order', 'ai_label']
 
 
 class ProductSerializer(serializers.ModelSerializer):

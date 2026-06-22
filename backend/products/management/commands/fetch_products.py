@@ -46,14 +46,20 @@ class Command(BaseCommand):
             created_count = 0
             updated_count = 0
 
+            skipped_count = 0
             for item in items:
                 product_id = item.get('productId', '')
                 if not product_id:
                     continue
 
-                title = item.get('title', '').replace('<b>', '').replace('</b>', '')
+                title = item.get('title', '').replace('<b>', '').replace('</b>', '').strip()
+                image = item.get('image', '').strip()
                 lprice_raw = item.get('lprice', '0')
                 lprice = int(lprice_raw) if lprice_raw else None
+
+                if not title or not image or not lprice:
+                    skipped_count += 1
+                    continue
 
                 obj, created = Product.objects.update_or_create(
                     product_id=product_id,
@@ -72,7 +78,7 @@ class Command(BaseCommand):
                     updated_count += 1
 
             self.stdout.write(self.style.SUCCESS(
-                f'  완료 - 신규: {created_count}개, 업데이트: {updated_count}개'
+                f'  완료 - 신규: {created_count}개, 업데이트: {updated_count}개, 불완전 스킵: {skipped_count}개'
             ))
 
         self.stdout.write(self.style.SUCCESS('모든 카테고리 수집 완료'))

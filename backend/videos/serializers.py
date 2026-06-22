@@ -71,6 +71,7 @@ class ReviewDetailSerializer(serializers.ModelSerializer):
 
 class VideoFeedSerializer(serializers.ModelSerializer):
     video_url = serializers.CharField(source='video_upload_id.video_url')
+    thumbnail_url = serializers.CharField(source='video_upload_id.thumbnail_url')
     user_nickname = serializers.CharField(source='user_id.nickname')
     user_profile_image = serializers.CharField(source='user_id.profile_image_url')
     product_title = serializers.CharField(source='product_id.title')
@@ -83,6 +84,7 @@ class VideoFeedSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'video_url',
+            'thumbnail_url',
             'user_id',
             'user_nickname',
             'user_profile_image',

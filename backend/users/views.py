@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
-from .serializers import SignupSerializer, LoginSerializer
+from .serializers import SignupSerializer, LoginSerializer, ProfileUpdateSerializer, PasswordChangeSerializer, LivingUpdateSerializer
 
 FRONTEND_URL = 'http://localhost:5173'
 
@@ -160,7 +160,7 @@ class CookieTokenRefreshView(APIView):
         return response
 
 
-# ── 내 정보 조회 ─────────────────────────────────────────────────────────
+# ── 내 정보 조회 / 수정 / 탈퇴 ───────────────────────────────────────────
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -171,6 +171,97 @@ class MeView(APIView):
             'id': user.id,
             'nickname': user.nickname,
             'profile_image_url': user.profile_image_url,
+            'housing_type': user.housing_type,
+            'area_size': user.area_size,
+        })
+
+    @extend_schema(request=ProfileUpdateSerializer, responses={200: None}, summary='내 프로필 수정')
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        data = serializer.validated_data
+        if 'nickname' in data:
+            user.nickname = data['nickname']
+        if 'profile_image_url' in data:
+            user.profile_image_url = data['profile_image_url']
+        user.save(update_fields=[k for k in data.keys()])
+
+        return Response({
+            'id': user.id,
+            'nickname': user.nickname,
+            'profile_image_url': user.profile_image_url,
+        })
+
+    @extend_schema(responses={204: None}, summary='회원 탈퇴')
+    def delete(self, request):
+        user = request.user
+        user.is_deleted = True
+        user.save(update_fields=['is_deleted'])
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
+
+
+# ── 비밀번호 변경 ─────────────────────────────────────────────────────────
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=PasswordChangeSerializer, responses={200: None, 400: None, 403: None}, summary='비밀번호 변경 (이메일 회원 전용)')
+    def patch(self, request):
+        email_user = EmailUser.objects.filter(user_id=request.user).first()
+        if not email_user:
+            return Response({'detail': '소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = PasswordChangeSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        if not check_password(data['current_password'], email_user.password):
+            return Response({'detail': '현재 비밀번호가 올바르지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        email_user.password = make_password(data['new_password'])
+        email_user.save(update_fields=['password'])
+        return Response(status=status.HTTP_200_OK)
+
+
+# ── 생활 환경 조회 / 수정 ─────────────────────────────────────────────────
+
+class LivingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: None}, summary='생활 환경 조회')
+    def get(self, request):
+        user = request.user
+        return Response({
+            'housing_type': user.housing_type,
+            'area_size': user.area_size,
+            'living_updated_at': user.living_updated_at,
+        })
+
+    @extend_schema(request=LivingUpdateSerializer, responses={200: None}, summary='생활 환경 수정')
+    def patch(self, request):
+        serializer = LivingUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        data = serializer.validated_data
+        if 'housing_type' in data:
+            user.housing_type = data['housing_type']
+        if 'area_size' in data:
+            user.area_size = data['area_size']
+        user.save(update_fields=[k for k in data.keys()])
+
+        return Response({
+            'housing_type': user.housing_type,
+            'area_size': user.area_size,
+            'living_updated_at': user.living_updated_at,
         })
 
 

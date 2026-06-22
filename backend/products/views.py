@@ -31,7 +31,9 @@ class ProductListView(APIView):
         ],
     )
     def get(self, request):
-        queryset = Product.objects.select_related('category_id').all()
+        queryset = Product.objects.select_related('category_id').filter(
+            title__gt='', image__gt='', lprice__isnull=False, lprice__gt=0
+        )
 
         category_id = request.query_params.get('category')
         if category_id:

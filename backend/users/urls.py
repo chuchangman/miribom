@@ -16,7 +16,8 @@ Including another URLconf
 """
 from django.urls import path
 from .views import (
-    SignupView, EmailLoginView, LogoutView, CookieTokenRefreshView, MeView,
+    SignupView, EmailLoginView, LogoutView, CookieTokenRefreshView,
+    MeView, PasswordChangeView, LivingView,
     NaverLoginView, NaverCallbackView,
     KakaoLoginView, KakaoCallbackView,
     GoogleLoginView, GoogleCallbackView,
@@ -30,6 +31,8 @@ urlpatterns = [
     path('logout/', LogoutView.as_view()),
     path('refresh/', CookieTokenRefreshView.as_view()),
     path('me/', MeView.as_view()),
+    path('me/password/', PasswordChangeView.as_view()),
+    path('me/living/', LivingView.as_view()),
     path('naver/', NaverLoginView.as_view()),
     path('naver/callback/', NaverCallbackView.as_view()),
     path('kakao/', KakaoLoginView.as_view()),
