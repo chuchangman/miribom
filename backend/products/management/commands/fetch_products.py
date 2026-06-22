@@ -131,13 +131,13 @@ class Command(BaseCommand):
                     _, created = Product.objects.update_or_create(
                         product_id=product_id,
                         defaults={
+                            'category_id': category,
                             'title': title,
                             'brand': item.get('brand', ''),
                             'image': image,
                             'lprice': lprice,
                             'link': item.get('link', ''),
                         },
-                        create_defaults={'category_id': category},
                     )
                     if created:
                         q_created += 1
