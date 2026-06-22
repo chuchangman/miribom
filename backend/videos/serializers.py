@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
-from .models import Video, VideoUpload, Review, Comment
+from .models import Video, VideoUpload, Review, Comment, Like
 
 
 class VideoPresignedUrlSerializer(serializers.Serializer):
@@ -78,6 +78,14 @@ class VideoFeedSerializer(serializers.ModelSerializer):
     product_image = serializers.CharField(source='product_id.image')
     product_lprice = serializers.IntegerField(source='product_id.lprice')
     like_count = serializers.IntegerField(read_only=True)
+    is_liked = serializers.SerializerMethodField()
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return Like.objects.filter(user_id=request.user, video_id=obj).exists()
 
     class Meta:
         model = Video
@@ -93,5 +101,6 @@ class VideoFeedSerializer(serializers.ModelSerializer):
             'product_image',
             'product_lprice',
             'like_count',
+            'is_liked',
             'created_at',
         ]

@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 
 from products.models import Category, Product
 from users.models import User
-from .models import Review, Video, VideoUpload
+from .models import Like, Review, Video, VideoUpload
 
 
 class PublicVideoReadPermissionTests(APITestCase):
@@ -37,6 +37,7 @@ class PublicVideoReadPermissionTests(APITestCase):
             product_id=product,
             user_id=user,
         )
+        self.user = user
         Review.objects.create(
             video_id=self.video,
             user_id=user,
@@ -48,6 +49,16 @@ class PublicVideoReadPermissionTests(APITestCase):
         response = self.client.get('/api/videos/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data[0]['is_liked'])
+
+    def test_authenticated_user_sees_liked_state_in_video_feed(self):
+        Like.objects.create(user_id=self.user, video_id=self.video)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get('/api/videos/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data[0]['is_liked'])
 
     def test_anonymous_user_cannot_create_video(self):
         response = self.client.post('/api/videos/', {}, format='json')

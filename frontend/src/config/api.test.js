@@ -4,6 +4,8 @@ import * as api from './api.js'
 
 test('apiFetch retries the request once after a successful token refresh', async () => {
   assert.equal(typeof api.apiFetch, 'function')
+  assert.equal(api.API_BASE_URL, 'http://localhost:8000/api')
+  assert.equal(api.AI_API_URL, 'http://localhost:8001')
 
   const originalFetch = globalThis.fetch
   const calls = []

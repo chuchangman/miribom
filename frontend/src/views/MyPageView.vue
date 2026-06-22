@@ -11,7 +11,7 @@
 
       <div class="profile-info">
         <h2>{{ user?.nickname || '사용자 정보 없음' }}</h2>
-        <p>이메일 정보는 아직 제공되지 않습니다.</p>
+        <p>{{ user?.email || '이메일 정보 없음' }}</p>
       </div>
 
       <button type="button" class="text-button" @click="goProfileEdit">프로필 편집</button>
@@ -37,7 +37,7 @@
     <section class="living-card">
       <div>
         <h2>내 생활환경</h2>
-        <p>생활환경 정보 API 연결 예정</p>
+        <p>{{ livingProfileSummary }}</p>
         <small>비슷한 공간에서 사용한 전자제품 후기를 우선 확인할 수 있습니다.</small>
       </div>
 
@@ -65,14 +65,34 @@
 </template>
 
 <script setup>
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import defaultProfile from '@/assets/images/default-profile.png'
 import { useAuth } from '@/composables/useAuth'
-import { ref } from 'vue'
 
 const router = useRouter()
 const { user, logout } = useAuth()
 const isLoggingOut = ref(false)
+
+const housingTypeLabelMap = {
+  apartment: '아파트',
+  villa: '빌라',
+  officetel: '오피스텔',
+  detached: '단독주택',
+}
+
+const livingProfileSummary = computed(() => {
+  const housingType = user.value?.housing_type
+  const areaSize = user.value?.area_size
+
+  if (!housingType && !areaSize) {
+    return '생활환경 정보가 없습니다.'
+  }
+
+  const label = housingTypeLabelMap[housingType] || housingType || '주거 형태 미입력'
+  const areaText = areaSize ? `${areaSize}평` : '평수 미입력'
+  return `${label} · ${areaText}`
+})
 
 const goProfileEdit = () => {
   router.push('/profile-edit')

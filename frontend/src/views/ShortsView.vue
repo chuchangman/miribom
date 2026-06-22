@@ -10,6 +10,7 @@
         <video
           :key="video.id"
           :src="video.videoUrl"
+          :poster="video.productImage || ''"
           controls
           playsinline
           preload="metadata"
@@ -30,6 +31,16 @@
         ></video>
       </div>
       <div class="video-actions">
+        <button
+          type="button"
+          class="like-action"
+          :class="{ 'like-action--active': video.isLiked }"
+          :disabled="isLikePending"
+          @click="handleToggleLike"
+        >
+          {{ video.isLiked ? '♥ 좋아요' : '♡ 좋아요' }}
+          <span>{{ video.likeCount }}</span>
+        </button>
         <button type="button" @click="goPrevVideo">이전</button>
         <button type="button" :disabled="isLoadingMore" @click="goNextVideo">
           {{ isLoadingMore ? '불러오는 중...' : '다음' }}
@@ -50,6 +61,7 @@
         <p>후기내용 : {{ video.review.content }}</p>
       </div>
       <p v-else-if="video.isReviewLoaded">등록된 리뷰 내용이 없습니다.</p>
+      <VideoComments :video-id="video.id" />
     </div>
   </section>
 </template>
@@ -57,14 +69,23 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchVideoReviews, fetchVideos, mapVideoFeedItem } from '@/services/videoApi.js'
+import VideoComments from '@/components/VideoComments.vue'
+import { useAuth } from '@/composables/useAuth'
+import {
+  fetchVideoReviews,
+  fetchVideos,
+  mapVideoFeedItem,
+  toggleVideoLike,
+} from '@/services/videoApi.js'
 
 const router = useRouter()
+const { isLogin } = useAuth()
 const isScrolling = ref(false)
 const currentIndex = ref(0)
 const videos = ref([])
 const isLoading = ref(false)
 const isLoadingMore = ref(false)
+const isLikePending = ref(false)
 const hasMoreVideos = ref(true)
 const errorMessage = ref('')
 const isVideoLoading = ref(true)
@@ -142,6 +163,30 @@ const loadInitialVideos = async () => {
     errorMessage.value = error.message || '영상 후기를 불러오지 못했습니다.'
   } finally {
     isLoading.value = false
+  }
+}
+
+const handleToggleLike = async () => {
+  if (!video.value || isLikePending.value) {
+    return
+  }
+
+  if (!isLogin.value) {
+    router.push('/login')
+    return
+  }
+
+  isLikePending.value = true
+  errorMessage.value = ''
+
+  try {
+    const result = await toggleVideoLike(video.value.id)
+    video.value.isLiked = result.liked
+    video.value.likeCount = result.like_count
+  } catch (error) {
+    errorMessage.value = error.message || '좋아요 상태를 변경하지 못했습니다.'
+  } finally {
+    isLikePending.value = false
   }
 }
 
@@ -271,11 +316,28 @@ onMounted(loadInitialVideos)
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+}
+.like-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #fecdd3;
+  border-radius: 999px;
+  background-color: #fff;
+  color: #be123c;
+  padding: 9px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.like-action--active {
+  background-color: #fff1f2;
 }
 .video-info {
   margin-top: 20px;
   flex-shrink: 0;
-  width: 300px;
+  width: 360px;
 }
 .product-info {
   border: 1px solid #ccc;

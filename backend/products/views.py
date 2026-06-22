@@ -2,10 +2,24 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.db.models import Q
+from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import Category, Product, Bookmark
 from .serializers import CategorySerializer, ProductSerializer, BookmarkSerializer, BookmarkCreateSerializer
+
+
+def _product_qs_with_stats():
+    return Product.objects.select_related('category_id').annotate(
+        avg_rating=Avg(
+            'video__review__rating',
+            filter=Q(video__is_deleted=False) & Q(video__review__is_deleted=False),
+        ),
+        review_count=Count(
+            'video__review',
+            filter=Q(video__is_deleted=False) & Q(video__review__is_deleted=False),
+            distinct=True,
+        ),
+    )
 
 
 class CategoryListView(APIView):
@@ -31,7 +45,7 @@ class ProductListView(APIView):
         ],
     )
     def get(self, request):
-        queryset = Product.objects.select_related('category_id').filter(
+        queryset = _product_qs_with_stats().filter(
             title__gt='', image__gt='', lprice__isnull=False, lprice__gt=0
         )
 
@@ -81,7 +95,7 @@ class ProductDetailView(APIView):
     @extend_schema(responses=ProductSerializer, summary='제품 상세 조회')
     def get(self, request, pk):
         try:
-            product = Product.objects.select_related('category_id').get(pk=pk)
+            product = _product_qs_with_stats().get(pk=pk)
         except Product.DoesNotExist:
             return Response({'detail': '상품을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)

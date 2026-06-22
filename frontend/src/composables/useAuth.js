@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { AUTH_API_URL } from '@/config/api'
+import { updateMyProfile } from '@/services/authApi.js'
 
 const isLogin = ref(false)
 const user = ref(null)
@@ -27,7 +28,7 @@ export const useAuth = () => {
       })
 
       return response.ok
-    } catch (error) {
+    } catch {
       return false
     }
   }
@@ -56,7 +57,7 @@ export const useAuth = () => {
       isLogin.value = true
       user.value = data
       return true
-    } catch (error) {
+    } catch {
       resetAuth()
       return false
     } finally {
@@ -98,9 +99,17 @@ export const useAuth = () => {
       resetAuth()
       isAuthInitialized.value = true
       return true
-    } catch (error) {
+    } catch {
       return false
     }
+  }
+
+  const updateProfile = async ({ nickname }) => {
+    const updatedUser = await updateMyProfile({ nickname })
+    user.value = updatedUser
+    isLogin.value = true
+    isAuthInitialized.value = true
+    return updatedUser
   }
 
   return {
@@ -110,5 +119,6 @@ export const useAuth = () => {
     user,
     login,
     logout,
+    updateProfile,
   }
 }

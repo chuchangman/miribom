@@ -165,17 +165,31 @@ class CookieTokenRefreshView(APIView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
-        return Response({
+    def _get_email(self, user):
+        email_user = EmailUser.objects.filter(user_id=user).first()
+        if email_user:
+            return email_user.email
+
+        social_user = SocialUser.objects.filter(user_id=user).first()
+        if social_user:
+            return social_user.email
+
+        return ''
+
+    def _serialize_user(self, user):
+        return {
             'id': user.id,
             'nickname': user.nickname,
+            'email': self._get_email(user),
             'profile_image_url': user.profile_image_url,
             'housing_type': user.housing_type,
             'area_size': user.area_size,
-        })
+        }
 
-    @extend_schema(request=ProfileUpdateSerializer, responses={200: None}, summary='내 프로필 수정')
+    def get(self, request):
+        return Response(self._serialize_user(request.user))
+
+    @extend_schema(request=ProfileUpdateSerializer, responses={200: None, 400: None}, summary='내 프로필 수정')
     def patch(self, request):
         serializer = ProfileUpdateSerializer(data=request.data)
         if not serializer.is_valid():
@@ -187,13 +201,9 @@ class MeView(APIView):
             user.nickname = data['nickname']
         if 'profile_image_url' in data:
             user.profile_image_url = data['profile_image_url']
-        user.save(update_fields=[k for k in data.keys()])
+        user.save(update_fields=list(data.keys()))
 
-        return Response({
-            'id': user.id,
-            'nickname': user.nickname,
-            'profile_image_url': user.profile_image_url,
-        })
+        return Response(self._serialize_user(user), status=status.HTTP_200_OK)
 
     @extend_schema(responses={204: None}, summary='회원 탈퇴')
     def delete(self, request):

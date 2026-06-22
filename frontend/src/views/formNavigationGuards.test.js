@@ -61,3 +61,29 @@ test('ReviewCreateView supports keyboard product selection in a five-row scroll 
   assert.match(source, /overflow-y:\s*auto/)
   assert.doesNotMatch(source, /console\.debug/)
 })
+
+test('ReviewCreateView predicts category from a separate thumbnail image', async () => {
+  const { descriptor, source } = await readView('./ReviewCreateView.vue')
+  const template = descriptor.template.content
+
+  assert.match(template, /id="review-thumbnail"/)
+  assert.match(template, /accept="image\/jpeg,image\/png"/)
+  assert.match(template, /@change="predictCategoryFromThumbnail"/)
+  assert.match(source, /predictCategoryFromImage/)
+  assert.match(source, /prediction\.service_label/)
+  assert.match(source, /category\.ai_label === prediction\.service_label/)
+  assert.match(source, /selectedCategory\.value = predictedCategory\.id/)
+  assert.match(source, /카테고리를 직접 선택해주세요/)
+  assert.match(source, /필요하면 직접 변경할 수 있습니다/)
+})
+
+test('ProfileEditView saves nickname through auth state', async () => {
+  const { descriptor, source } = await readView('./ProfileEditView.vue')
+  const template = descriptor.template.content
+
+  assert.match(template, /@submit\.prevent="saveProfile"/)
+  assert.match(source, /updateProfile/)
+  assert.match(source, /router\.push\('\/mypage'\)/)
+  assert.doesNotMatch(source, /console\.log/)
+  assert.doesNotMatch(source, /프로필 저장 API 연결 전/)
+})

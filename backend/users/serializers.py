@@ -13,7 +13,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ProfileUpdateSerializer(serializers.Serializer):
-    nickname = serializers.CharField(max_length=50, required=False)
+    nickname = serializers.CharField(max_length=50, min_length=3, required=False)
     profile_image_url = serializers.CharField(max_length=512, required=False, allow_blank=True)
 
 
