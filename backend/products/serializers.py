@@ -52,3 +52,25 @@ class BookmarkSerializer(serializers.ModelSerializer):
 
 class BookmarkCreateSerializer(serializers.Serializer):
     product_id = serializers.IntegerField(help_text='북마크할 제품의 ID')
+
+
+BUDGET_CHOICES = ['under_30', '30_to_100', '100_to_300', 'over_300']
+
+class RecommendationRequestSerializer(serializers.Serializer):
+    housing_type = serializers.CharField(max_length=20)
+    area_size = serializers.IntegerField(min_value=1, allow_null=True, required=False)
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1,
+        help_text='관심 카테고리 id 목록 (1개 이상)',
+    )
+    budget = serializers.ChoiceField(
+        choices=BUDGET_CHOICES,
+        help_text='under_30 / 30_to_100 / 100_to_300 / over_300',
+    )
+    category_answers = serializers.DictField(
+        child=serializers.DictField(child=serializers.JSONField()),
+        required=False,
+        default=dict,
+        help_text='카테고리별 세부 질문 답변 {"category_id": {"question_id": "answer"}}',
+    )
