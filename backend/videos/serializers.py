@@ -9,8 +9,15 @@ class VideoPresignedUrlSerializer(serializers.Serializer):
     file_size = serializers.IntegerField(min_value=1)
 
 
+class ThumbnailPresignedUrlSerializer(serializers.Serializer):
+    filename = serializers.CharField(max_length=255)
+    content_type = serializers.ChoiceField(choices=[(t, t) for t in settings.THUMBNAIL_ALLOWED_CONTENT_TYPES])
+    file_size = serializers.IntegerField(min_value=1)
+
+
 class VideoUploadCompleteSerializer(serializers.Serializer):
     r2_key = serializers.CharField(max_length=500)
+    thumbnail_url = serializers.CharField(max_length=500, required=False, allow_blank=True, default='')
 
 
 class VideoCreateSerializer(serializers.Serializer):

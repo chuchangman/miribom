@@ -33,6 +33,9 @@ R2_PUBLIC_URL = os.getenv('R2_PUBLIC_URL')  # e.g. https://pub-xxx.r2.dev
 VIDEO_MAX_SIZE_BYTES = 500 * 1024 * 1024  # 500MB
 VIDEO_ALLOWED_CONTENT_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
 
+THUMBNAIL_MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+THUMBNAIL_ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png']
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

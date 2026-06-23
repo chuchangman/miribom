@@ -15,6 +15,7 @@ from products.models import Product
 from .models import VideoUpload, Video, Review, Like, Comment
 from .serializers import (
     VideoPresignedUrlSerializer,
+    ThumbnailPresignedUrlSerializer,
     VideoUploadCompleteSerializer,
     VideoCreateSerializer,
     VideoFeedSerializer,
@@ -110,6 +111,71 @@ class VideoPresignedUrlView(APIView):
         )
 
 
+class ThumbnailPresignedUrlView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='썸네일 업로드용 Presigned URL 발급',
+        request=ThumbnailPresignedUrlSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'presigned_url': {'type': 'string'},
+                    'thumbnail_url': {'type': 'string'},
+                },
+            },
+            400: {'description': '파일 형식 또는 크기 오류'},
+        },
+    )
+    def post(self, request):
+        serializer = ThumbnailPresignedUrlSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        filename = data['filename']
+        content_type = data['content_type']
+        file_size = data['file_size']
+
+        if file_size > settings.THUMBNAIL_MAX_SIZE_BYTES:
+            max_mb = settings.THUMBNAIL_MAX_SIZE_BYTES // (1024 * 1024)
+            return Response(
+                {'detail': f'파일 크기는 {max_mb}MB를 초과할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ext = filename.rsplit('.', 1)[-1] if '.' in filename else 'jpg'
+        r2_key = f"thumbnails/{request.user.id}/{uuid.uuid4()}.{ext}"
+
+        try:
+            client = get_r2_client()
+            presigned_url = client.generate_presigned_url(
+                'put_object',
+                Params={
+                    'Bucket': settings.R2_BUCKET_NAME,
+                    'Key': r2_key,
+                    'ContentType': content_type,
+                },
+                ExpiresIn=600,
+            )
+        except (BotoCoreError, ClientError, ValueError):
+            return Response(
+                {'detail': 'R2 서비스에 연결할 수 없습니다. 환경 설정을 확인해주세요.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        thumbnail_url = f"{settings.R2_PUBLIC_URL}/{r2_key}"
+
+        return Response(
+            {
+                'presigned_url': presigned_url,
+                'thumbnail_url': thumbnail_url,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class VideoUploadCompleteView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -136,6 +202,7 @@ class VideoUploadCompleteView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         r2_key = serializer.validated_data['r2_key']
+        thumbnail_url = serializer.validated_data.get('thumbnail_url', '')
 
         try:
             video_upload = VideoUpload.objects.get(id=video_upload_id)
@@ -154,7 +221,13 @@ class VideoUploadCompleteView(APIView):
         video_url = f"{settings.R2_PUBLIC_URL}/{r2_key}"
         video_upload.video_url = video_url
         video_upload.status = 'uploaded'
-        video_upload.save(update_fields=['video_url', 'status'])
+        update_fields = ['video_url', 'status']
+
+        if thumbnail_url:
+            video_upload.thumbnail_url = thumbnail_url
+            update_fields.append('thumbnail_url')
+
+        video_upload.save(update_fields=update_fields)
 
         return Response(
             {
