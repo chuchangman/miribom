@@ -22,3 +22,7 @@ Thumbs.db
 # Local Codex context
 /AGENTS.md
 /docs/
+
+
+*.pem
+*.key

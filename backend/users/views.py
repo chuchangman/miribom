@@ -12,7 +12,9 @@ from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
 from .serializers import SignupSerializer, LoginSerializer, ProfileUpdateSerializer, PasswordChangeSerializer, LivingUpdateSerializer
 
-FRONTEND_URL = 'http://localhost:5173'
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+BACKEND_PUBLIC_URL = os.getenv('BACKEND_PUBLIC_URL', 'http://localhost:8000')
+COOKIE_SECURE = os.getenv('COOKIE_SECURE', 'False') == 'True'
 
 
 def _set_jwt_cookies(response, refresh):
@@ -22,7 +24,7 @@ def _set_jwt_cookies(response, refresh):
         key='access_token',
         value=access_token,
         httponly=True,
-        secure=False,  # 프로덕션에서는 True (HTTPS)
+        secure=COOKIE_SECURE,
         samesite='Lax',
         max_age=int(refresh.access_token.lifetime.total_seconds()),
     )
@@ -30,7 +32,7 @@ def _set_jwt_cookies(response, refresh):
         key='refresh_token',
         value=refresh_token,
         httponly=True,
-        secure=False,  # 프로덕션에서는 True (HTTPS)
+        secure=COOKIE_SECURE,
         samesite='Lax',
         max_age=int(refresh.lifetime.total_seconds()),
     )
@@ -153,7 +155,7 @@ class CookieTokenRefreshView(APIView):
             key='access_token',
             value=str(refresh.access_token),
             httponly=True,
-            secure=False,  # 프로덕션에서는 True
+            secure=COOKIE_SECURE,
             samesite='Lax',
             max_age=int(refresh.access_token.lifetime.total_seconds()),
         )
@@ -280,7 +282,7 @@ class LivingView(APIView):
 class NaverLoginView(APIView):
     def get(self, request):
         client_id = os.getenv('NAVER_CLIENT_ID')
-        redirect_uri = 'http://localhost:8000/api/auth/naver/callback'
+        redirect_uri = f'{BACKEND_PUBLIC_URL}/api/auth/naver/callback'
         naver_auth_url = (
             f"https://nid.naver.com/oauth2.0/authorize"
             f"?response_type=code"
@@ -302,7 +304,7 @@ class NaverCallbackView(APIView):
                 'grant_type': 'authorization_code',
                 'client_id': os.getenv('NAVER_CLIENT_ID'),
                 'client_secret': os.getenv('NAVER_CLIENT_SECRET'),
-                'redirect_uri': 'http://localhost:8000/api/auth/naver/callback',
+                'redirect_uri': f'{BACKEND_PUBLIC_URL}/api/auth/naver/callback',
                 'code': code,
                 'state': state,
             }
@@ -329,7 +331,7 @@ class NaverCallbackView(APIView):
 class KakaoLoginView(APIView):
     def get(self, request):
         client_id = os.getenv('KAKAO_CLIENT_ID')
-        redirect_uri = 'http://localhost:8000/api/auth/kakao/callback'
+        redirect_uri = f'{BACKEND_PUBLIC_URL}/api/auth/kakao/callback'
         kakao_auth_url = (
             f"https://kauth.kakao.com/oauth/authorize"
             f"?response_type=code"
@@ -349,7 +351,7 @@ class KakaoCallbackView(APIView):
                 'grant_type': 'authorization_code',
                 'client_id': os.getenv('KAKAO_CLIENT_ID'),
                 'client_secret': os.getenv('KAKAO_CLIENT_SECRET'),
-                'redirect_uri': 'http://localhost:8000/api/auth/kakao/callback',
+                'redirect_uri': f'{BACKEND_PUBLIC_URL}/api/auth/kakao/callback',
                 'code': code,
             },
             headers={'Content-Type': 'application/x-www-form-urlencoded'},
@@ -377,7 +379,7 @@ class KakaoCallbackView(APIView):
 class GoogleLoginView(APIView):
     def get(self, request):
         client_id = os.getenv('GOOGLE_CLIENT_ID')
-        redirect_uri = 'http://localhost:8000/api/auth/google/callback'
+        redirect_uri = f'{BACKEND_PUBLIC_URL}/api/auth/google/callback'
         google_auth_url = (
             f"https://accounts.google.com/o/oauth2/v2/auth"
             f"?response_type=code"
@@ -398,7 +400,7 @@ class GoogleCallbackView(APIView):
                 'grant_type': 'authorization_code',
                 'client_id': os.getenv('GOOGLE_CLIENT_ID'),
                 'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
-                'redirect_uri': 'http://localhost:8000/api/auth/google/callback',
+                'redirect_uri': f'{BACKEND_PUBLIC_URL}/api/auth/google/callback',
                 'code': code,
             },
         )
