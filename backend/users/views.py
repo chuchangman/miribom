@@ -280,7 +280,7 @@ class LivingView(APIView):
 class NaverLoginView(APIView):
     def get(self, request):
         client_id = os.getenv('NAVER_CLIENT_ID')
-        redirect_uri = 'http://localhost:8000/api/auth/naver/callback'
+        redirect_uri = os.getenv('NAVER_REDIRECT_URI', 'http://localhost:8000/api/auth/naver/callback')
         naver_auth_url = (
             f"https://nid.naver.com/oauth2.0/authorize"
             f"?response_type=code"
@@ -302,7 +302,7 @@ class NaverCallbackView(APIView):
                 'grant_type': 'authorization_code',
                 'client_id': os.getenv('NAVER_CLIENT_ID'),
                 'client_secret': os.getenv('NAVER_CLIENT_SECRET'),
-                'redirect_uri': 'http://localhost:8000/api/auth/naver/callback',
+                'redirect_uri': os.getenv('NAVER_REDIRECT_URI', 'http://localhost:8000/api/auth/naver/callback'),
                 'code': code,
                 'state': state,
             }
@@ -329,7 +329,7 @@ class NaverCallbackView(APIView):
 class KakaoLoginView(APIView):
     def get(self, request):
         client_id = os.getenv('KAKAO_CLIENT_ID')
-        redirect_uri = 'http://localhost:8000/api/auth/kakao/callback'
+        redirect_uri = os.getenv('KAKAO_REDIRECT_URI', 'http://localhost:8000/api/auth/kakao/callback')
         kakao_auth_url = (
             f"https://kauth.kakao.com/oauth/authorize"
             f"?response_type=code"
@@ -349,7 +349,7 @@ class KakaoCallbackView(APIView):
                 'grant_type': 'authorization_code',
                 'client_id': os.getenv('KAKAO_CLIENT_ID'),
                 'client_secret': os.getenv('KAKAO_CLIENT_SECRET'),
-                'redirect_uri': 'http://localhost:8000/api/auth/kakao/callback',
+                'redirect_uri': os.getenv('KAKAO_REDIRECT_URI', 'http://localhost:8000/api/auth/kakao/callback'),
                 'code': code,
             },
             headers={'Content-Type': 'application/x-www-form-urlencoded'},
@@ -377,7 +377,7 @@ class KakaoCallbackView(APIView):
 class GoogleLoginView(APIView):
     def get(self, request):
         client_id = os.getenv('GOOGLE_CLIENT_ID')
-        redirect_uri = 'http://localhost:8000/api/auth/google/callback'
+        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/api/auth/google/callback')
         google_auth_url = (
             f"https://accounts.google.com/o/oauth2/v2/auth"
             f"?response_type=code"
@@ -398,7 +398,7 @@ class GoogleCallbackView(APIView):
                 'grant_type': 'authorization_code',
                 'client_id': os.getenv('GOOGLE_CLIENT_ID'),
                 'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
-                'redirect_uri': 'http://localhost:8000/api/auth/google/callback',
+                'redirect_uri': os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/api/auth/google/callback'),
                 'code': code,
             },
         )
