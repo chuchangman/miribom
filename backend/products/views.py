@@ -303,6 +303,13 @@ def _get_product_filter_from_answers(cat_id, answers):
     return q, min_price
 
 
+BUDGET_MIN_MAP = {
+    'under_30':   0,
+    '30_to_100':  300_000,
+    '100_to_300': 1_000_000,
+    'over_300':   3_000_000,
+}
+
 BUDGET_MAX_MAP = {
     'under_30':   300_000,
     '30_to_100':  1_000_000,
@@ -381,6 +388,7 @@ class RecommendationView(APIView):
         category_ids = data['category_ids']
         budget = data['budget']
         category_answers = data.get('category_answers', {})
+        min_price = BUDGET_MIN_MAP[budget]
         max_price = BUDGET_MAX_MAP[budget]
 
         categories = list(
@@ -409,6 +417,8 @@ class RecommendationView(APIView):
                 category_id=cat_id,
                 title__gt='', image__gt='', lprice__isnull=False, lprice__gt=0,
             )
+            if min_price:
+                qs = qs.filter(lprice__gte=min_price)
             if max_price:
                 qs = qs.filter(lprice__lte=max_price)
 
