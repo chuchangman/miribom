@@ -1,5 +1,21 @@
 <template>
-  <button type="button" class="back-button" @click="goBack">이전으로</button>
+  <button type="button" class="back-button" aria-label="이전으로" @click="goBack">
+    <svg
+      class="back-button__icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M15 19 8 12l7-7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
   <p v-if="isLoading">제품 정보를 불러오는 중입니다.</p>
   <div v-else-if="errorMessage">
     <h1>{{ errorMessage }}</h1>
@@ -392,15 +408,22 @@ onBeforeUnmount(() => {
 .back-button {
   margin-bottom: 20px;
   border: none;
-  background: none;
-  padding: 0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 8px;
   color: #2563eb;
-  font-size: 1rem;
   cursor: pointer;
+  line-height: 0;
+  box-shadow: 0 8px 18px rgb(37 99 235 / 10%);
 }
 
 .back-button:hover {
-  text-decoration: underline;
+  background-color: #eff6ff;
+}
+
+.back-button__icon {
+  width: 24px;
+  height: 24px;
 }
 
 .product-hero {
