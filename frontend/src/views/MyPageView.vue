@@ -97,7 +97,7 @@ const goProfileEdit = () => {
 }
 
 const goLivingProfile = () => {
-  router.push('/living-profile')
+  router.push({ name: 'LivingProfile', query: { mode: 'edit' } })
 }
 
 const handleLogout = async () => {
@@ -194,8 +194,6 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #ecfdf5;
-  border-color: #a7f3d0;
 }
 
 .living-card h2 {

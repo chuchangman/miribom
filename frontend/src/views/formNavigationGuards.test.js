@@ -15,9 +15,14 @@ test('LivingProfileView warns only after the user changes the form', async () =>
   const { source } = await readView('./LivingProfileView.vue')
 
   assert.match(source, /onBeforeRouteLeave/)
-  assert.match(source, /housingType\.value \|\| Number\(areaSize\.value\) !== 1/)
+  assert.match(source, /initialHousingType/)
+  assert.match(source, /initialAreaSize/)
+  assert.match(source, /housingType\.value !== initialHousingType\.value/)
+  assert.match(source, /Number\(areaSize\.value\) !== Number\(initialAreaSize\.value\)/)
   assert.match(source, /window\.confirm/)
   assert.match(source, /isSaved\.value = true/)
+  assert.match(source, /route\.query\.mode === 'onboarding'/)
+  assert.match(source, /router\.push\(\{ name: isOnboardingMode\.value \? 'Home' : 'MyPage' \}\)/)
 })
 
 test('ReviewCreateView warns for entered review data and clears the warning after success', async () => {

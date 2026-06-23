@@ -12,6 +12,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/')"
       >
+        <SidebarMenuIcon name="home" />
         홈
       </RouterLink>
       <RouterLink
@@ -20,6 +21,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/products')"
       >
+        <SidebarMenuIcon name="search" />
         검색
       </RouterLink>
       <RouterLink
@@ -28,6 +30,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/shorts')"
       >
+        <SidebarMenuIcon name="shorts" />
         숏폼 시청
       </RouterLink>
     </div>
@@ -40,6 +43,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/favorites')"
       >
+        <SidebarMenuIcon name="bookmark" />
         즐겨찾기
       </RouterLink>
       <RouterLink
@@ -48,6 +52,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/likes')"
       >
+        <SidebarMenuIcon name="heart" />
         좋아요
       </RouterLink>
       <RouterLink
@@ -56,6 +61,7 @@
         active-class="sidebar-link--active"
         @click="handleNavigationClick($event, '/review')"
       >
+        <SidebarMenuIcon name="write" />
         후기 등록
       </RouterLink>
     </div>
@@ -75,6 +81,7 @@
           })
         "
       >
+        <CategoryIcon :category="category" variant="sidebar" />
         {{ category.name }}
       </RouterLink>
     </div>
@@ -84,6 +91,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import CategoryIcon from '@/components/CategoryIcon.vue'
+import SidebarMenuIcon from '@/components/SidebarMenuIcon.vue'
 import miribomLogo from '@/assets/images/miribom-logo.svg'
 import { useAuth } from '@/composables/useAuth'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
@@ -163,6 +172,7 @@ onMounted(loadCategories)
   display: flex;
   min-height: 40px;
   align-items: center;
+  gap: 10px;
   margin-bottom: var(--space-1);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
@@ -178,6 +188,16 @@ onMounted(loadCategories)
 .sidebar-link:hover {
   background-color: var(--gray-50);
   color: var(--color-text);
+}
+
+.sidebar-link--active :deep(.category-icon-box) {
+  background-color: var(--category-hover-bg);
+  color: #fff;
+}
+
+.sidebar-link--active :deep(.sidebar-menu-icon) {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-600);
 }
 
 .sidebar-link--active {

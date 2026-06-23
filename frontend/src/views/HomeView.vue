@@ -38,6 +38,210 @@
           />
         </div>
       </section>
+
+      <section class="recommendation-section">
+        <div class="recommendation-header">
+          <div>
+            <h2>생활환경에 맞는 가전 추천</h2>
+            <p>입력해둔 생활환경과 관심 카테고리를 바탕으로 제품을 추천해드려요.</p>
+          </div>
+        </div>
+
+        <div v-if="!isLogin" class="recommendation-login-card">
+          <div class="recommendation-login-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                fill-rule="evenodd"
+                d="M9 4.5a.75.75 0 0 1 1.43 0l.58 1.74a4.5 4.5 0 0 0 2.84 2.84l1.74.58a.75.75 0 0 1 0 1.43l-1.74.58a4.5 4.5 0 0 0-2.84 2.84l-.58 1.74a.75.75 0 0 1-1.43 0l-.58-1.74a4.5 4.5 0 0 0-2.84-2.84l-1.74-.58a.75.75 0 0 1 0-1.43l1.74-.58a4.5 4.5 0 0 0 2.84-2.84L9 4.5Zm8.25 9a.75.75 0 0 1 .7.48l.34.9a2.25 2.25 0 0 0 1.33 1.33l.9.34a.75.75 0 0 1 0 1.4l-.9.34a2.25 2.25 0 0 0-1.33 1.33l-.34.9a.75.75 0 0 1-1.4 0l-.34-.9a2.25 2.25 0 0 0-1.33-1.33l-.9-.34a.75.75 0 0 1 0-1.4l.9-.34a2.25 2.25 0 0 0 1.33-1.33l.34-.9a.75.75 0 0 1 .7-.48Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+          <div class="recommendation-login-copy">
+            <strong>내 환경에 맞는 가전, AI가 추천</strong>
+            <p>주거형태 · 평수를 등록하면 비슷한 환경의 자취생 후기가 우선 보여요.</p>
+          </div>
+          <RouterLink to="/login">로그인하고 추천받기</RouterLink>
+        </div>
+
+        <div v-else class="recommendation-panel">
+          <aside class="recommendation-controls">
+            <div v-if="!hasLivingProfile" class="recommendation-empty">
+              <strong>생활환경을 먼저 입력해주세요.</strong>
+              <p>주거 형태와 평수를 입력하면 더 잘 맞는 추천을 받을 수 있어요.</p>
+              <button type="button" @click="goLivingProfile">생활환경 입력하기</button>
+            </div>
+
+            <template v-else>
+              <template v-if="recommendationStep === 'intro'">
+                <div class="living-summary">
+                  <span>내 생활환경</span>
+                  <strong>{{ recommendationLivingSummary }}</strong>
+                </div>
+
+                <label class="control-group">
+                  <span>예산</span>
+                  <select v-model="selectedRecommendationBudget">
+                    <option value="" disabled>예산을 선택해주세요</option>
+                    <option
+                      v-for="option in recommendationBudgetOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </label>
+              </template>
+
+              <template v-else-if="recommendationStep === 'categories'">
+                <div class="survey-heading">
+                  <span>1단계</span>
+                  <strong>관심 카테고리를 선택해주세요.</strong>
+                  <p>추천받고 싶은 카테고리를 하나만 선택해주세요.</p>
+                </div>
+
+                <div class="recommendation-category-list">
+                  <button
+                    v-for="category in recommendationCategories"
+                    :key="category.id"
+                    type="button"
+                    class="recommendation-category"
+                    :class="{ selected: isRecommendationCategorySelected(category.id) }"
+                    @click="toggleRecommendationCategory(category.id)"
+                  >
+                    {{ category.name }}
+                  </button>
+                </div>
+              </template>
+
+              <template v-else-if="currentRecommendationQuestion">
+                <div class="survey-heading">
+                  <span>
+                    {{ currentRecommendationQuestionNumber }} /
+                    {{ recommendationQuestionSteps.length }}
+                  </span>
+                  <strong>{{ currentRecommendationQuestion.text }}</strong>
+                  <p>
+                    {{
+                      currentRecommendationQuestion.type === 'multiple'
+                        ? '복수 선택이 가능해요.'
+                        : '하나만 선택해주세요.'
+                    }}
+                  </p>
+                </div>
+
+                <div class="recommendation-option-list">
+                  <button
+                    v-for="option in currentRecommendationQuestion.options"
+                    :key="option.value"
+                    type="button"
+                    class="recommendation-option"
+                    :class="{
+                      selected: isRecommendationOptionSelected(
+                        currentRecommendationQuestion,
+                        option.value,
+                      ),
+                    }"
+                    @click="selectRecommendationAnswer(currentRecommendationQuestion, option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+              </template>
+
+              <p v-if="recommendationErrorMessage" class="error-message">
+                {{ recommendationErrorMessage }}
+              </p>
+
+              <div class="recommendation-step-actions">
+                <button
+                  v-if="recommendationStep !== 'intro'"
+                  type="button"
+                  class="recommendation-back"
+                  :disabled="isLoadingRecommendationQuestions || isLoadingRecommendations"
+                  @click="
+                    recommendationStep === 'categories'
+                      ? resetRecommendationSurvey({ keepResults: true })
+                      : goPreviousRecommendationQuestion()
+                  "
+                >
+                  이전
+                </button>
+                <button
+                  v-if="recommendationStep === 'intro'"
+                  type="button"
+                  class="recommendation-submit"
+                  :disabled="!selectedRecommendationBudget || isLoadingRecommendationOptions"
+                  @click="startRecommendationSurvey"
+                >
+                  추천받기
+                </button>
+                <button
+                  v-else-if="recommendationStep === 'categories'"
+                  type="button"
+                  class="recommendation-submit"
+                  :disabled="
+                    selectedRecommendationCategoryIds.length === 0 ||
+                    isLoadingRecommendationQuestions
+                  "
+                  @click="loadRecommendationQuestions"
+                >
+                  {{ isLoadingRecommendationQuestions ? '질문 불러오는 중...' : '다음' }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="recommendation-submit"
+                  :disabled="!isCurrentRecommendationQuestionAnswered || isLoadingRecommendations"
+                  @click="goNextRecommendationQuestion"
+                >
+                  {{
+                    isLoadingRecommendations
+                      ? '추천 받는 중...'
+                      : currentRecommendationQuestionIndex === recommendationQuestionSteps.length - 1
+                        ? '추천받기'
+                        : '다음'
+                  }}
+                </button>
+              </div>
+            </template>
+          </aside>
+
+          <div class="recommendation-results">
+            <p v-if="!hasLivingProfile" class="recommendation-placeholder">
+              생활환경 입력을 완료하면 이곳에 추천 제품이 표시됩니다.
+            </p>
+            <p v-else-if="isLoadingRecommendationOptions" class="recommendation-placeholder">
+              추천 선택지를 불러오는 중입니다.
+            </p>
+            <p v-else-if="recommendationResults.length === 0" class="recommendation-placeholder">
+              관심 카테고리와 예산을 선택한 뒤 추천 받기를 눌러주세요.
+            </p>
+            <div v-else class="recommendation-result-list">
+              <article
+                v-for="result in recommendationResults"
+                :key="result.category.id"
+                class="recommendation-result-group"
+              >
+                <div class="result-heading">
+                  <div>
+                    <span>{{ result.category.name }}</span>
+                    <h3>{{ result.reason || '생활환경에 어울리는 카테고리예요.' }}</h3>
+                  </div>
+                </div>
+                <div class="recommendation-products">
+                  <ProductCard
+                    v-for="product in result.products"
+                    :key="product.id"
+                    :product="mapRecommendedProduct(product, result.category)"
+                  />
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
 
     <aside class="favorite-panel">
@@ -74,12 +278,18 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import CategoryCard from '@/components/CategoryCard.vue'
 import HomeFavoriteItem from '@/components/HomeFavoriteItem.vue'
+import ProductCard from '@/components/ProductCard.vue'
 import { useAuth } from '@/composables/useAuth.js'
 import { fetchBookmarks } from '@/services/bookmarkApi.js'
-import { fetchProductCategories } from '@/services/productApi.js'
+import {
+  fetchProductCategories,
+  fetchProductRecommendations,
+  fetchRecommendationQuestions,
+  fetchRecommendationOptions,
+} from '@/services/productApi.js'
 
 const router = useRouter()
-const { isAuthInitialized, isLogin } = useAuth()
+const { hasLivingProfile, isAuthInitialized, isLogin, user } = useAuth()
 
 const searchQuery = ref('')
 const categories = ref([])
@@ -88,8 +298,104 @@ const categoryErrorMessage = ref('')
 const favoriteProducts = ref([])
 const isLoadingFavorites = ref(false)
 const favoriteErrorMessage = ref('')
+const recommendationOptions = ref(null)
+const selectedRecommendationBudget = ref('')
+const selectedRecommendationCategoryIds = ref([])
+const recommendationStep = ref('intro')
+const recommendationQuestionGroups = ref([])
+const recommendationAnswers = ref({})
+const currentRecommendationQuestionIndex = ref(0)
+const recommendationResults = ref([])
+const isLoadingRecommendationOptions = ref(false)
+const isLoadingRecommendationQuestions = ref(false)
+const isLoadingRecommendations = ref(false)
+const recommendationErrorMessage = ref('')
 
 const displayedCategories = computed(() => categories.value.slice(0, 8))
+const recommendationCategories = computed(
+  () => recommendationOptions.value?.categories || categories.value,
+)
+const recommendationBudgetOptions = computed(
+  () => recommendationOptions.value?.budget_options || [],
+)
+const recommendationLivingSummary = computed(() => {
+  const housingType = recommendationOptions.value?.housing_type || user.value?.housing_type || ''
+  const areaSize = recommendationOptions.value?.area_size || user.value?.area_size
+  const housingLabel =
+    {
+      apartment: '아파트',
+      villa: '빌라',
+      officetel: '오피스텔',
+      detached: '단독주택',
+      dormitory: '기숙사',
+    }[housingType] || housingType || '주거 형태 미입력'
+
+  return areaSize ? `${housingLabel} · ${areaSize}평` : housingLabel
+})
+const canRequestRecommendations = computed(
+  () =>
+    isLogin.value &&
+    hasLivingProfile.value &&
+    selectedRecommendationBudget.value &&
+    selectedRecommendationCategoryIds.value.length > 0,
+)
+const selectedRecommendationCategories = computed(() =>
+  recommendationCategories.value.filter((category) =>
+    isRecommendationCategorySelected(category.id),
+  ),
+)
+const recommendationQuestionSteps = computed(() => {
+  const steps = []
+
+  const appendQuestion = (categoryId, question) => {
+    steps.push({
+      ...question,
+      categoryId: String(categoryId),
+      key: `${categoryId}:${question.id}`,
+    })
+
+    const answer = recommendationAnswers.value[String(categoryId)]?.[question.id]
+    const selectedValues = Array.isArray(answer) ? answer : answer ? [answer] : []
+
+    question.options?.forEach((option) => {
+      if (!selectedValues.includes(option.value)) {
+        return
+      }
+
+      option.follow_up?.forEach((followUpQuestion) => {
+        appendQuestion(categoryId, followUpQuestion)
+      })
+    })
+  }
+
+  recommendationQuestionGroups.value.forEach((group) => {
+    group.questions?.forEach((question) => {
+      appendQuestion(group.category_id, question)
+    })
+  })
+
+  return steps
+})
+const currentRecommendationQuestion = computed(
+  () => recommendationQuestionSteps.value[currentRecommendationQuestionIndex.value] || null,
+)
+const currentRecommendationQuestionNumber = computed(
+  () =>
+    Math.min(
+      currentRecommendationQuestionIndex.value + 1,
+      recommendationQuestionSteps.value.length || 1,
+    ),
+)
+const isCurrentRecommendationQuestionAnswered = computed(() => {
+  const question = currentRecommendationQuestion.value
+
+  if (!question) {
+    return true
+  }
+
+  const answer = recommendationAnswers.value[question.categoryId]?.[question.id]
+  return Array.isArray(answer) ? answer.length > 0 : Boolean(answer)
+})
 
 function search() {
   router.push({
@@ -138,11 +444,219 @@ const loadFavorites = async () => {
   }
 }
 
+const goLivingProfile = () => {
+  router.push({ name: 'LivingProfile', query: { mode: 'onboarding' } })
+}
+
+const syncRecommendationDefaults = () => {
+  selectedRecommendationBudget.value = ''
+}
+
+const resetRecommendationSurvey = ({ keepResults = true } = {}) => {
+  recommendationStep.value = 'intro'
+  selectedRecommendationBudget.value = ''
+  selectedRecommendationCategoryIds.value = []
+  recommendationQuestionGroups.value = []
+  recommendationAnswers.value = {}
+  currentRecommendationQuestionIndex.value = 0
+
+  if (!keepResults) {
+    recommendationResults.value = []
+  }
+}
+
+const loadRecommendationOptions = async () => {
+  recommendationErrorMessage.value = ''
+  recommendationResults.value = []
+
+  if (!isLogin.value || !hasLivingProfile.value) {
+    recommendationOptions.value = null
+    selectedRecommendationBudget.value = ''
+    resetRecommendationSurvey({ keepResults: false })
+    return
+  }
+
+  isLoadingRecommendationOptions.value = true
+
+  try {
+    recommendationOptions.value = await fetchRecommendationOptions()
+    syncRecommendationDefaults()
+  } catch (error) {
+    recommendationErrorMessage.value = error.message || '추천 선택지를 불러오지 못했습니다.'
+  } finally {
+    isLoadingRecommendationOptions.value = false
+  }
+}
+
+const startRecommendationSurvey = () => {
+  recommendationErrorMessage.value = ''
+
+  if (!selectedRecommendationBudget.value) {
+    recommendationErrorMessage.value = '예산을 먼저 선택해주세요.'
+    return
+  }
+
+  recommendationStep.value = 'categories'
+}
+
+const isRecommendationCategorySelected = (categoryId) =>
+  selectedRecommendationCategoryIds.value.some((selectedId) => String(selectedId) === String(categoryId))
+
+const toggleRecommendationCategory = (categoryId) => {
+  if (isRecommendationCategorySelected(categoryId)) {
+    selectedRecommendationCategoryIds.value = []
+    return
+  }
+
+  selectedRecommendationCategoryIds.value = [categoryId]
+}
+
+const loadRecommendationQuestions = async () => {
+  if (selectedRecommendationCategoryIds.value.length === 0 || isLoadingRecommendationQuestions.value) {
+    recommendationErrorMessage.value = '관심 카테고리를 하나 이상 선택해주세요.'
+    return
+  }
+
+  recommendationErrorMessage.value = ''
+  recommendationAnswers.value = {}
+  recommendationQuestionGroups.value = []
+  currentRecommendationQuestionIndex.value = 0
+  isLoadingRecommendationQuestions.value = true
+
+  try {
+    const response = await fetchRecommendationQuestions(selectedRecommendationCategoryIds.value)
+    recommendationQuestionGroups.value = response.categories || []
+
+    if (recommendationQuestionSteps.value.length === 0) {
+      await loadRecommendations()
+      return
+    }
+
+    recommendationStep.value = 'questions'
+  } catch (error) {
+    recommendationErrorMessage.value = error.message || '추천 질문을 불러오지 못했습니다.'
+  } finally {
+    isLoadingRecommendationQuestions.value = false
+  }
+}
+
+const isRecommendationOptionSelected = (question, optionValue) => {
+  const answer = recommendationAnswers.value[question.categoryId]?.[question.id]
+  return Array.isArray(answer) ? answer.includes(optionValue) : answer === optionValue
+}
+
+const selectRecommendationAnswer = (question, optionValue) => {
+  const categoryAnswers = {
+    ...(recommendationAnswers.value[question.categoryId] || {}),
+  }
+  const currentAnswer = categoryAnswers[question.id]
+
+  if (question.type === 'multiple') {
+    const nextAnswer = Array.isArray(currentAnswer) ? [...currentAnswer] : []
+    const existingIndex = nextAnswer.indexOf(optionValue)
+
+    if (existingIndex >= 0) {
+      nextAnswer.splice(existingIndex, 1)
+    } else {
+      nextAnswer.push(optionValue)
+    }
+
+    categoryAnswers[question.id] = nextAnswer
+  } else {
+    categoryAnswers[question.id] = optionValue
+  }
+
+  recommendationAnswers.value = {
+    ...recommendationAnswers.value,
+    [question.categoryId]: categoryAnswers,
+  }
+}
+
+const goPreviousRecommendationQuestion = () => {
+  if (currentRecommendationQuestionIndex.value > 0) {
+    currentRecommendationQuestionIndex.value -= 1
+    return
+  }
+
+  recommendationStep.value = 'categories'
+}
+
+const goNextRecommendationQuestion = async () => {
+  if (!isCurrentRecommendationQuestionAnswered.value) {
+    recommendationErrorMessage.value = '선택지를 하나 이상 골라주세요.'
+    return
+  }
+
+  recommendationErrorMessage.value = ''
+  const nextIndex = currentRecommendationQuestionIndex.value + 1
+
+  if (nextIndex < recommendationQuestionSteps.value.length) {
+    currentRecommendationQuestionIndex.value = nextIndex
+    return
+  }
+
+  await loadRecommendations()
+}
+
+const mapRecommendedProduct = (product, category) => ({
+  id: String(product.id),
+  name: product.title,
+  imageUrl: product.image,
+  price: product.lprice || 0,
+  category: product.category?.name || category?.name || '',
+})
+
+const buildRecommendationAnswerPayload = () => {
+  const payload = {}
+
+  recommendationQuestionSteps.value.forEach((question) => {
+    const answer = recommendationAnswers.value[question.categoryId]?.[question.id]
+
+    if (!answer || (Array.isArray(answer) && answer.length === 0)) {
+      return
+    }
+
+    payload[question.categoryId] = {
+      ...(payload[question.categoryId] || {}),
+      [question.id]: answer,
+    }
+  })
+
+  return payload
+}
+
+const loadRecommendations = async () => {
+  if (!canRequestRecommendations.value || isLoadingRecommendations.value) {
+    return
+  }
+
+  recommendationErrorMessage.value = ''
+  isLoadingRecommendations.value = true
+
+  try {
+    const response = await fetchProductRecommendations({
+      housingType: recommendationOptions.value?.housing_type || user.value?.housing_type,
+      areaSize: recommendationOptions.value?.area_size || user.value?.area_size || null,
+      categoryIds: selectedRecommendationCategoryIds.value,
+      budget: selectedRecommendationBudget.value,
+      categoryAnswers: buildRecommendationAnswerPayload(),
+    })
+
+    recommendationResults.value = response.results || []
+    resetRecommendationSurvey({ keepResults: true })
+  } catch (error) {
+    recommendationErrorMessage.value = error.message || '추천 제품을 불러오지 못했습니다.'
+  } finally {
+    isLoadingRecommendations.value = false
+  }
+}
+
 watch(
-  [isAuthInitialized, isLogin],
+  [isAuthInitialized, isLogin, hasLivingProfile],
   ([isInitialized]) => {
     if (isInitialized) {
       loadFavorites()
+      loadRecommendationOptions()
     }
   },
   { immediate: true },
@@ -243,13 +757,330 @@ hr {
 .category-list :deep(.category-card) {
   box-sizing: border-box;
   width: 100%;
-  min-height: 104px;
+  min-height: 124px;
+  border-color: #e2e8f0;
+  border-radius: 18px;
+}
+
+.recommendation-section {
+  margin-top: 34px;
+}
+
+.recommendation-header {
+  margin-bottom: 16px;
+}
+
+.recommendation-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.45rem;
+}
+
+.recommendation-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.recommendation-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 2fr) minmax(0, 3fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.recommendation-login-card {
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid #93c5fd;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgb(37 99 235 / 9%) 0%, rgb(29 78 216 / 15%) 100%),
+    #fff;
+  padding: 20px 24px;
+  box-shadow: 0 12px 28px rgb(37 99 235 / 10%);
+}
+
+.recommendation-login-icon {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 48%, #1e40af 100%);
+  color: #fff;
+  box-shadow: 0 14px 26px rgb(37 99 235 / 28%);
+}
+
+.recommendation-login-icon svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+
+.recommendation-login-copy {
+  flex: 1;
+}
+
+.recommendation-login-card strong {
+  color: var(--color-text);
+  font-size: 1.08rem;
+}
+
+.recommendation-login-card p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.recommendation-login-card a {
+  flex: 0 0 auto;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.recommendation-login-card a:hover {
+  text-decoration: underline;
+}
+
+.recommendation-controls,
+.recommendation-results {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background-color: #fff;
+  box-shadow: 0 10px 26px rgb(15 23 42 / 5%);
+}
+
+.recommendation-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+}
+
+.living-summary {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--color-primary-200);
+  border-radius: 14px;
+  background-color: var(--color-primary-light);
+  padding: 16px;
+}
+
+.living-summary span,
+.control-group > span {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.living-summary strong {
+  color: var(--color-text);
+  font-size: 1.08rem;
+}
+
+.control-group {
+  display: grid;
+  gap: 10px;
+}
+
+.control-group select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background-color: #fff;
+  padding: 12px 14px;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.survey-heading {
+  display: grid;
+  gap: 7px;
+}
+
+.survey-heading span {
+  color: var(--color-primary-600);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.survey-heading strong {
+  color: var(--color-text);
+  font-size: 1.08rem;
+  line-height: 1.45;
+}
+
+.survey-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.recommendation-category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recommendation-option-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recommendation-category,
+.recommendation-option {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background-color: #fff;
+  padding: 9px 12px;
+  color: #475569;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recommendation-option {
+  width: 100%;
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.recommendation-category.selected,
+.recommendation-option.selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-600);
+}
+
+.recommendation-submit,
+.recommendation-back,
+.recommendation-empty a,
+.recommendation-empty button {
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.recommendation-submit {
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: #fff;
+}
+
+.recommendation-empty a,
+.recommendation-empty button {
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: #fff;
+}
+
+.recommendation-back {
+  border: 1px solid var(--color-primary);
+  background-color: #fff;
+  color: var(--color-primary-600);
+}
+
+.recommendation-step-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: auto;
+}
+
+.recommendation-step-actions .recommendation-submit:only-child {
+  grid-column: 1 / -1;
+}
+
+.recommendation-submit:disabled,
+.recommendation-back:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.recommendation-empty {
+  min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-color: #e2e8f0;
-  border-radius: 14px;
-  background-color: #fff;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+
+.recommendation-empty strong {
+  font-size: 1.05rem;
+}
+
+.recommendation-empty p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.recommendation-results {
+  min-height: 420px;
+  padding: 20px;
+}
+
+.recommendation-placeholder {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: #64748b;
+  text-align: center;
+}
+
+.recommendation-result-list {
+  display: grid;
+  gap: 22px;
+}
+
+.recommendation-result-group {
+  display: grid;
+  gap: 14px;
+}
+
+.result-heading span {
+  color: var(--color-primary-600);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.result-heading h3 {
+  margin: 4px 0 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.recommendation-products {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 12px;
+  scroll-snap-type: x mandatory;
+}
+
+.recommendation-products :deep(.product-card) {
+  flex: 0 0 220px;
+  height: 320px;
+  scroll-snap-align: start;
+}
+
+.recommendation-products :deep(.product-image-area) {
+  height: 168px;
 }
 
 .favorite-panel {
@@ -310,11 +1141,20 @@ hr {
   .favorite-panel {
     width: auto;
   }
+
+  .recommendation-panel {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
   .category-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recommendation-login-card {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>
