@@ -3,7 +3,13 @@
   <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
   <p v-else-if="!video">등록된 영상 후기가 없습니다.</p>
   <section class="shorts-layout" v-else>
-    <div class="video-area" @wheel.prevent="handleWheel">
+    <div
+      class="video-area"
+      @wheel.prevent="handleWheel"
+      @touchstart="handleTouchStart"
+      @touchmove.prevent="handleTouchMove"
+      @touchend="handleTouchEnd"
+    >
       <div class="video-frame">
         <p v-if="isVideoLoading" class="video-loading">영상을 불러오는 중입니다.</p>
         <video
@@ -144,6 +150,11 @@ const isReviewLoading = ref(false)
 const isCommentPanelOpen = ref(false)
 const reviewErrorMessage = ref('')
 let reviewRequestId = 0
+let touchStartY = 0
+let touchStartX = 0
+let isBodyScrollLocked = false
+let lockedScrollY = 0
+let previousBodyStyle = null
 
 const windowWidth = ref(window.innerWidth)
 const handleWindowResize = () => { windowWidth.value = window.innerWidth }
@@ -271,6 +282,47 @@ const handleWheel = async (event) => {
   }, 500)
 }
 
+const handleTouchStart = (event) => {
+  if (!isMobile.value || event.touches.length === 0) {
+    return
+  }
+
+  touchStartY = event.touches[0].clientY
+  touchStartX = event.touches[0].clientX
+}
+
+const handleTouchMove = () => {
+  // 모바일 숏폼 화면에서는 기본 페이지 스크롤 대신 touchend에서 영상 전환만 처리한다.
+}
+
+const handleTouchEnd = async (event) => {
+  if (!isMobile.value || isScrolling.value || event.changedTouches.length === 0) {
+    return
+  }
+
+  const touchEndY = event.changedTouches[0].clientY
+  const touchEndX = event.changedTouches[0].clientX
+  const deltaY = touchStartY - touchEndY
+  const deltaX = touchStartX - touchEndX
+  const absDeltaY = Math.abs(deltaY)
+  const absDeltaX = Math.abs(deltaX)
+
+  if (absDeltaY < 50 || absDeltaY < absDeltaX) {
+    return
+  }
+
+  if (deltaY > 0) {
+    await goNextVideo()
+  } else {
+    goPrevVideo()
+  }
+
+  isScrolling.value = true
+  setTimeout(() => {
+    isScrolling.value = false
+  }, 500)
+}
+
 const goNextVideo = async () => {
   if (currentIndex.value < videos.value.length - 1) {
     currentIndex.value += 1
@@ -313,6 +365,47 @@ const handleVideoError = () => {
   errorMessage.value = '영상을 재생하지 못했습니다.'
 }
 
+const lockBodyScroll = () => {
+  if (isBodyScrollLocked) {
+    return
+  }
+
+  lockedScrollY = window.scrollY
+  previousBodyStyle = {
+    overflow: document.body.style.overflow,
+    position: document.body.style.position,
+    top: document.body.style.top,
+    width: document.body.style.width,
+  }
+  document.body.style.overflow = 'hidden'
+  document.body.style.position = 'fixed'
+  document.body.style.top = `-${lockedScrollY}px`
+  document.body.style.width = '100%'
+  isBodyScrollLocked = true
+}
+
+const unlockBodyScroll = () => {
+  if (!isBodyScrollLocked || !previousBodyStyle) {
+    return
+  }
+
+  document.body.style.overflow = previousBodyStyle.overflow
+  document.body.style.position = previousBodyStyle.position
+  document.body.style.top = previousBodyStyle.top
+  document.body.style.width = previousBodyStyle.width
+  window.scrollTo(0, lockedScrollY)
+  previousBodyStyle = null
+  isBodyScrollLocked = false
+}
+
+const syncBodyScrollLock = () => {
+  if (isMobile.value) {
+    lockBodyScroll()
+  } else {
+    unlockBodyScroll()
+  }
+}
+
 watch(
   video,
   (currentVideo) => {
@@ -323,13 +416,17 @@ watch(
   { immediate: true },
 )
 
+watch(isMobile, syncBodyScrollLock)
+
 onMounted(() => {
   loadInitialVideos()
   window.addEventListener('resize', handleWindowResize)
+  syncBodyScrollLock()
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleWindowResize)
+  unlockBodyScroll()
 })
 </script>
 
@@ -621,14 +718,21 @@ onUnmounted(() => {
 }
 @media (max-width: 720px) {
   .shorts-layout {
+    height: calc(100dvh - 96px);
     gap: 0;
+    overflow: hidden;
   }
   .video-area {
     display: block;
     position: relative;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
   }
   .video-frame {
     width: 100%;
+    height: 100%;
+    max-height: none;
     border-radius: 22px;
   }
   .video-actions {
