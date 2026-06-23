@@ -1,10 +1,13 @@
 <template>
-  <nav class="app-sidebar" aria-label="주요 메뉴">
-    <RouterLink to="/" class="sidebar-logo" @click="handleNavigationClick($event, '/')">
-      <img :src="miribomLogo" alt="미리봄 로고" />
-    </RouterLink>
+  <nav class="app-sidebar" :class="{ 'is-open': isOpen }" aria-label="주요 메뉴">
+    <div class="sidebar-top">
+      <RouterLink to="/" class="sidebar-logo" @click="handleNavigationClick($event, '/')">
+        <img :src="miribomLogo" alt="미리봄 로고" />
+      </RouterLink>
+      <button class="sidebar-close" aria-label="메뉴 닫기" @click="emit('close')">✕</button>
+    </div>
 
-    <div class="sidebar-section">
+    <div class="sidebar-section" @click.capture="emit('close')">
       <p class="sidebar-section__title">탐색</p>
       <RouterLink
         to="/"
@@ -35,7 +38,7 @@
       </RouterLink>
     </div>
 
-    <div v-if="isLogin" class="sidebar-section">
+    <div v-if="isLogin" class="sidebar-section" @click.capture="emit('close')">
       <p class="sidebar-section__title">내 활동</p>
       <RouterLink
         to="/favorites"
@@ -66,7 +69,7 @@
       </RouterLink>
     </div>
 
-    <div class="sidebar-section">
+    <div class="sidebar-section" @click.capture="emit('close')">
       <p class="sidebar-section__title">카테고리</p>
       <RouterLink
         v-for="category in categories"
@@ -97,6 +100,9 @@ import miribomLogo from '@/assets/images/miribom-logo.svg'
 import { useAuth } from '@/composables/useAuth'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { fetchProductCategories } from '@/services/productApi.js'
+
+defineProps({ isOpen: Boolean })
+const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
@@ -141,10 +147,21 @@ onMounted(loadCategories)
   background-color: var(--color-surface);
 }
 
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-close {
+  display: none;
+}
+
 .sidebar-logo {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
   padding: var(--space-4) 0;
 }
 
@@ -211,13 +228,42 @@ onMounted(loadCategories)
   color: var(--color-primary-600);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .app-sidebar {
-    width: 152px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    width: 260px;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: none;
   }
 
-  .sidebar-link {
-    padding-inline: var(--space-2);
+  .app-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgb(0 0 0 / 12%);
+  }
+
+  .sidebar-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .sidebar-close:hover {
+    background-color: var(--gray-100);
+    color: var(--color-text);
   }
 }
 </style>

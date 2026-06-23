@@ -95,4 +95,10 @@ ul {
 li {
   min-width: 0;
 }
+
+@media (max-width: 768px) {
+  ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 </style>

@@ -82,7 +82,7 @@ class ProductListView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        queryset = queryset.order_by('lprice', 'id')
+        queryset = queryset.order_by('-lprice', 'id')
         page = list(queryset[offset:offset + limit + 1])
         has_next = len(page) > limit
         products = page[:limit]

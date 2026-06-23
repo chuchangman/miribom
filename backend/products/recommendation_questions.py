@@ -1,7 +1,7 @@
 """
 카테고리별 계층형 질문 정의.
 
-각 질문은 type: 'single' | 'multiple' 을 가지며,
+각 질문은 type: 'single' 을 가지며,
 옵션마다 follow_up 으로 하위 질문을 중첩할 수 있습니다.
 """
 
@@ -164,8 +164,8 @@ CATEGORY_QUESTIONS = {
     3: [
         {
             "id": "kitchen_products",
-            "text": "필요한 제품을 선택해주세요 (복수 선택 가능)",
-            "type": "multiple",
+            "text": "필요한 제품을 선택해주세요",
+            "type": "single",
             "options": [
                 {
                     "value": "microwave",
@@ -465,8 +465,8 @@ CATEGORY_QUESTIONS = {
     7: [
         {
             "id": "pc_products",
-            "text": "필요한 제품을 선택해주세요 (복수 선택 가능)",
-            "type": "multiple",
+            "text": "필요한 제품을 선택해주세요",
+            "type": "single",
             "options": [
                 {
                     "value": "monitor",

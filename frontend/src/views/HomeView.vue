@@ -14,13 +14,6 @@
         <button type="submit" class="text-button">검색</button>
       </form>
 
-      <nav class="popular-searches">
-        인기검색어 :
-        <RouterLink to="/products?search=건조기">건조기</RouterLink>
-        <RouterLink to="/products?search=영상기">영상기</RouterLink>
-        <RouterLink to="/products?search=냉장고">냉장고</RouterLink>
-      </nav>
-
       <hr />
 
       <section class="category-section">
@@ -78,7 +71,13 @@
                   <span>내 생활환경</span>
                   <strong>{{ recommendationLivingSummary }}</strong>
                 </div>
+              </template>
 
+              <template v-else-if="recommendationStep === 'budget'">
+                <div class="survey-heading">
+                  <span>1단계</span>
+                  <strong>예산을 선택해주세요.</strong>
+                </div>
                 <label class="control-group">
                   <span>예산</span>
                   <select v-model="selectedRecommendationBudget">
@@ -96,7 +95,7 @@
 
               <template v-else-if="recommendationStep === 'categories'">
                 <div class="survey-heading">
-                  <span>1단계</span>
+                  <span>2단계</span>
                   <strong>관심 카테고리를 선택해주세요.</strong>
                   <p>추천받고 싶은 카테고리를 하나만 선택해주세요.</p>
                 </div>
@@ -117,18 +116,9 @@
 
               <template v-else-if="currentRecommendationQuestion">
                 <div class="survey-heading">
-                  <span>
-                    {{ currentRecommendationQuestionNumber }} /
-                    {{ recommendationQuestionSteps.length }}
-                  </span>
+                  <span>{{ currentRecommendationQuestionIndex + 3 }}단계</span>
                   <strong>{{ currentRecommendationQuestion.text }}</strong>
-                  <p>
-                    {{
-                      currentRecommendationQuestion.type === 'multiple'
-                        ? '복수 선택이 가능해요.'
-                        : '하나만 선택해주세요.'
-                    }}
-                  </p>
+                  <p>하나만 선택해주세요.</p>
                 </div>
 
                 <div class="recommendation-option-list">
@@ -160,11 +150,7 @@
                   type="button"
                   class="recommendation-back"
                   :disabled="isLoadingRecommendationQuestions || isLoadingRecommendations"
-                  @click="
-                    recommendationStep === 'categories'
-                      ? resetRecommendationSurvey({ keepResults: true })
-                      : goPreviousRecommendationQuestion()
-                  "
+                  @click="goPreviousRecommendationStep"
                 >
                   이전
                 </button>
@@ -172,10 +158,19 @@
                   v-if="recommendationStep === 'intro'"
                   type="button"
                   class="recommendation-submit"
-                  :disabled="!selectedRecommendationBudget || isLoadingRecommendationOptions"
+                  :disabled="isLoadingRecommendationOptions"
                   @click="startRecommendationSurvey"
                 >
-                  추천받기
+                  시작하기
+                </button>
+                <button
+                  v-else-if="recommendationStep === 'budget'"
+                  type="button"
+                  class="recommendation-submit"
+                  :disabled="!selectedRecommendationBudget || isLoadingRecommendationOptions"
+                  @click="goFromBudgetToCategories"
+                >
+                  다음
                 </button>
                 <button
                   v-else-if="recommendationStep === 'categories'"
@@ -490,12 +485,13 @@ const loadRecommendationOptions = async () => {
 
 const startRecommendationSurvey = () => {
   recommendationErrorMessage.value = ''
+  recommendationResults.value = []
+  selectedRecommendationBudget.value = ''
+  recommendationStep.value = 'budget'
+}
 
-  if (!selectedRecommendationBudget.value) {
-    recommendationErrorMessage.value = '예산을 먼저 선택해주세요.'
-    return
-  }
-
+const goFromBudgetToCategories = () => {
+  recommendationErrorMessage.value = ''
   recommendationStep.value = 'categories'
 }
 
@@ -549,22 +545,8 @@ const selectRecommendationAnswer = (question, optionValue) => {
   const categoryAnswers = {
     ...(recommendationAnswers.value[question.categoryId] || {}),
   }
-  const currentAnswer = categoryAnswers[question.id]
 
-  if (question.type === 'multiple') {
-    const nextAnswer = Array.isArray(currentAnswer) ? [...currentAnswer] : []
-    const existingIndex = nextAnswer.indexOf(optionValue)
-
-    if (existingIndex >= 0) {
-      nextAnswer.splice(existingIndex, 1)
-    } else {
-      nextAnswer.push(optionValue)
-    }
-
-    categoryAnswers[question.id] = nextAnswer
-  } else {
-    categoryAnswers[question.id] = optionValue
-  }
+  categoryAnswers[question.id] = optionValue
 
   recommendationAnswers.value = {
     ...recommendationAnswers.value,
@@ -579,6 +561,17 @@ const goPreviousRecommendationQuestion = () => {
   }
 
   recommendationStep.value = 'categories'
+}
+
+const goPreviousRecommendationStep = () => {
+  if (recommendationStep.value === 'budget') {
+    selectedRecommendationBudget.value = ''
+    recommendationStep.value = 'intro'
+  } else if (recommendationStep.value === 'categories') {
+    recommendationStep.value = 'budget'
+  } else {
+    goPreviousRecommendationQuestion()
+  }
 }
 
 const goNextRecommendationQuestion = async () => {
@@ -691,6 +684,7 @@ h3 {
 
 .highlight {
   color: #2563eb;
+  white-space: nowrap;
 }
 
 .search-form {
@@ -721,13 +715,6 @@ h3 {
   cursor: pointer;
 }
 
-.popular-searches a {
-  margin-left: 0.75em;
-  color: #334155;
-  text-decoration: none;
-}
-
-.popular-searches a:hover,
 .favorite-header a:hover,
 .favorite-message a:hover {
   text-decoration: underline;
