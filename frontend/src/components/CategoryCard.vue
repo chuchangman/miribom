@@ -1,13 +1,13 @@
 <template>
   <div class="category-card" @click="goSearchCategory">
-    <!-- 나중에 아이콘 넣을때 다시 살릴 부분 -->
-    <!-- <img src="" :alt="props.category.name" /> -->
+    <CategoryIcon :category="props.category" />
     <h3>{{ props.category.name }}</h3>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
+import CategoryIcon from '@/components/CategoryIcon.vue'
 
 const props = defineProps({
   category: {
@@ -25,14 +25,42 @@ function goSearchCategory() {
 
 <style scoped>
 .category-card {
-  border: 1px solid #ccc;
-  padding: 1em;
   width: 200px;
+  min-height: 124px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background-color: #fff;
+  padding: 22px 16px;
+  color: var(--color-text);
   text-align: center;
   cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
-.category-card img {
-  width: 100%;
-  height: auto;
+
+.category-card h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.category-card:hover {
+  border-color: var(--category-border);
+  box-shadow: 0 14px 30px rgb(15 23 42 / 8%);
+  transform: translateY(-2px);
+}
+
+.category-card:hover :deep(.category-icon-box) {
+  background-color: var(--category-hover-bg);
+  color: #fff;
+  transform: scale(1.04);
 }
 </style>

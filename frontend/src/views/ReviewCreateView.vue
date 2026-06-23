@@ -1067,13 +1067,13 @@ onMounted(loadCategories)
   margin-top: var(--space-6);
   border: none;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0f766e 0%, #0f9d7a 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   padding: 16px 18px;
   color: #fff;
   font-weight: 800;
   font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 18px 30px -20px rgb(15 118 110 / 65%);
+  box-shadow: 0 18px 30px -20px rgb(37 99 235 / 65%);
 }
 
 .submit-button:disabled {

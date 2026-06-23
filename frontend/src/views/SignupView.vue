@@ -251,7 +251,7 @@ const signup = async () => {
       return
     }
 
-    router.push('/living-profile')
+    router.push({ name: 'LivingProfile', query: { mode: 'onboarding' } })
   } catch {
     alert('회원가입 실패')
   } finally {

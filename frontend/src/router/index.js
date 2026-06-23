@@ -62,15 +62,15 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (!to.meta.requiresAuth && !to.meta.guestOnly) {
-    return true
-  }
-
-  const { checkAuth } = useAuth()
+  const { checkAuth, hasLivingProfile } = useAuth()
   const isAuthenticated = await checkAuth()
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     return { name: 'Login' }
+  }
+
+  if (isAuthenticated && !hasLivingProfile.value && to.name !== 'LivingProfile') {
+    return { name: 'LivingProfile', query: { mode: 'onboarding' } }
   }
 
   if (to.meta.guestOnly && isAuthenticated) {

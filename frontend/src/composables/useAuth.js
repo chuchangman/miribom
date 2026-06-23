@@ -1,10 +1,11 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { AUTH_API_URL } from '@/config/api'
-import { updateMyProfile } from '@/services/authApi.js'
+import { updateMyLivingProfile, updateMyProfile } from '@/services/authApi.js'
 
 const isLogin = ref(false)
 const user = ref(null)
 const isAuthInitialized = ref(false)
+const hasLivingProfile = computed(() => Boolean(user.value?.housing_type && user.value?.area_size))
 let authCheckPromise = null
 
 export const useAuth = () => {
@@ -112,13 +113,27 @@ export const useAuth = () => {
     return updatedUser
   }
 
+  const updateLivingProfile = async ({ housingType, areaSize }) => {
+    const livingProfile = await updateMyLivingProfile({ housingType, areaSize })
+    user.value = {
+      ...user.value,
+      housing_type: livingProfile.housing_type,
+      area_size: livingProfile.area_size,
+    }
+    isLogin.value = true
+    isAuthInitialized.value = true
+    return livingProfile
+  }
+
   return {
     checkAuth,
     isLogin,
     isAuthInitialized,
     user,
+    hasLivingProfile,
     login,
     logout,
     updateProfile,
+    updateLivingProfile,
   }
 }
