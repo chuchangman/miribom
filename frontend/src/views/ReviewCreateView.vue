@@ -278,7 +278,7 @@ let productSearchRequestId = 0
 const selectedVideoName = computed(() => inputVideo.value?.name || '')
 const selectedThumbnailName = computed(() => thumbnailFile.value?.name || '')
 const ratingDisplayText = computed(() =>
-  reviewRating.value === null ? '평점을 선택해주세요' : `${reviewRating.value.toFixed(1)}점`,
+  reviewRating.value === null ? '평점을 선택해주세요' : `${reviewRating.value}점`,
 )
 const starFillWidth = computed(() => `${((reviewRating.value || 0) / 5) * 100}%`)
 const hasUnsavedChanges = computed(

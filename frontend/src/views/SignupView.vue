@@ -448,9 +448,9 @@ const signup = async () => {
     width: min(132px, 42vw);
   }
 
-  .profile-field__body {
-    flex-direction: column;
-    align-items: flex-start;
+  .profile-upload-button {
+    padding: 8px 12px;
+    font-size: 0.88rem;
   }
 }
 </style>

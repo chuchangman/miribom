@@ -375,6 +375,16 @@ ul {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
+
+@media (max-width: 768px) {
+  ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .category-select {
+    width: 80px;
+  }
+}
 li {
   min-width: 0;
 }

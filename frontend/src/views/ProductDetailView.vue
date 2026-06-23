@@ -59,8 +59,18 @@
       <p v-else-if="reviews.length === 0" class="empty-message">아직 등록된 리뷰가 없습니다.</p>
       <ul v-else class="review-list">
         <li v-for="review in reviews" :key="review.id">
-          <button type="button" class="review-card" @click="openReviewModal(review)">
+          <div class="review-card" @click="openReviewModal(review)">
             <div class="review-card__video">
+              <button
+                type="button"
+                class="review-like-button"
+                :class="{ 'review-like-button--active': review.isLiked }"
+                :disabled="likePendingVideoId === review.video_id"
+                @click.stop="handleToggleLike(review)"
+              >
+                {{ review.isLiked ? '♥' : '♡' }}
+                <span>{{ review.likeCount }}</span>
+              </button>
               <video
                 :src="review.videoUrl"
                 :poster="review.thumbnailUrl || review.productImage || product.image"
@@ -68,15 +78,15 @@
                 muted
                 playsinline
               ></video>
+            </div>
+            <div class="review-card__content">
+              <div class="review-card__header">
+                <strong>{{ review.user_nickname }}</strong>
               </div>
-              <div class="review-card__content">
-                <div class="review-card__header">
-                  <strong>{{ review.user_nickname }}</strong>
-                </div>
-                <div class="review-card__stars" aria-hidden="true">
-                  <div class="rating-stars rating-stars--small">
-                    <div class="rating-stars__base">{{ starRow }}</div>
-                    <div class="rating-stars__fill" :style="{ width: getStarWidth(review.rating) }">
+              <div class="review-card__stars" aria-hidden="true">
+                <div class="rating-stars rating-stars--small">
+                  <div class="rating-stars__base">{{ starRow }}</div>
+                  <div class="rating-stars__fill" :style="{ width: getStarWidth(review.rating) }">
                     {{ starRow }}
                   </div>
                 </div>
@@ -84,7 +94,7 @@
               <p>{{ review.content }}</p>
               <small>클릭해서 영상과 후기를 크게 볼 수 있어요.</small>
             </div>
-          </button>
+          </div>
         </li>
       </ul>
     </section>
@@ -116,7 +126,19 @@
           <div class="review-modal__summary">
             <div class="review-modal__summary-head">
               <strong>{{ selectedReview.user_nickname }}</strong>
-              <span>{{ selectedReview.rating.toFixed(1) }} / 5</span>
+              <div class="review-modal__summary-actions">
+                <button
+                  type="button"
+                  class="review-like-button"
+                  :class="{ 'review-like-button--active': selectedReview.isLiked }"
+                  :disabled="likePendingVideoId === selectedReview.video_id"
+                  @click="handleToggleLike(selectedReview)"
+                >
+                  {{ selectedReview.isLiked ? '♥' : '♡' }}
+                  <span>{{ selectedReview.likeCount }}</span>
+                </button>
+                <span>{{ selectedReview.rating }} / 5</span>
+              </div>
             </div>
             <div class="rating-stars" aria-hidden="true">
               <div class="rating-stars__base">{{ starRow }}</div>
@@ -138,7 +160,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createBookmark, deleteBookmark, fetchBookmarks } from '@/services/bookmarkApi.js'
 import { useAuth } from '@/composables/useAuth.js'
 import { fetchProductDetail } from '@/services/productApi.js'
-import { fetchVideoReviews, fetchVideos } from '@/services/videoApi.js'
+import { fetchVideoReviews, fetchVideos, toggleVideoLike } from '@/services/videoApi.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -154,6 +176,7 @@ const reviewErrorMessage = ref('')
 const bookmarkId = ref(null)
 const isBookmarkPending = ref(false)
 const bookmarkErrorMessage = ref('')
+const likePendingVideoId = ref(null)
 const starRow = '★★★★★'
 
 const reviewCount = computed(() => reviews.value.length)
@@ -220,6 +243,8 @@ const loadReviewSummary = async (productId) => {
           productImage: video?.product_image || product.value?.image || '',
           productTitle: video?.product_title || product.value?.title || '',
           productPrice: video?.product_lprice || product.value?.lprice || 0,
+          isLiked: video?.is_liked ?? false,
+          likeCount: video?.like_count ?? 0,
         }
       })
       .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))
@@ -301,6 +326,27 @@ const toggleBookmark = async () => {
     bookmarkErrorMessage.value = error.message || '즐겨찾기 상태를 변경하지 못했습니다.'
   } finally {
     isBookmarkPending.value = false
+  }
+}
+
+const handleToggleLike = async (review) => {
+  if (!isLogin.value) {
+    router.push({ name: 'Login' })
+    return
+  }
+
+  if (likePendingVideoId.value !== null) return
+
+  likePendingVideoId.value = review.video_id
+
+  try {
+    const result = await toggleVideoLike(review.video_id)
+    review.isLiked = result.liked
+    review.likeCount = result.like_count
+  } catch {
+    // ignore
+  } finally {
+    likePendingVideoId.value = null
   }
 }
 
@@ -560,10 +606,39 @@ onBeforeUnmount(() => {
 }
 
 .review-card__video {
+  position: relative;
   overflow: hidden;
   border-radius: 14px;
   background-color: #0f172a;
   aspect-ratio: 4 / 4.6;
+}
+
+.review-like-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #fecdd3;
+  border-radius: 999px;
+  background-color: rgb(255 255 255 / 92%);
+  color: #be123c;
+  padding: 5px 9px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.review-like-button--active {
+  background-color: #fff1f2;
+}
+
+.review-like-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .review-card__video video {
@@ -700,12 +775,24 @@ onBeforeUnmount(() => {
 .review-modal__summary-head {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
 
-.review-modal__summary-head span {
+.review-modal__summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.review-modal__summary-actions span {
   color: var(--color-primary-600);
   font-weight: 700;
+}
+
+.review-modal__summary .review-like-button {
+  position: static;
 }
 
 .review-modal__summary p {

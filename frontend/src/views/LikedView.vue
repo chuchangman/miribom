@@ -116,6 +116,12 @@ onMounted(loadLikedVideos)
   gap: 18px;
 }
 
+@media (max-width: 768px) {
+  .liked-video-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .load-more-button {
   display: block;
   margin: 24px auto 0;
