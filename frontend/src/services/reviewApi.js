@@ -46,7 +46,7 @@ export const searchProducts = async ({ query = '', categoryId = null } = {}) => 
   return data.results
 }
 
-export const createReviewFlow = async ({ file, productId, rating, content }) => {
+export const createReviewFlow = async ({ file, thumbnailFile = null, productId, rating, content }) => {
   const presignedResponse = await apiFetch(`${VIDEOS_API_URL}/presigned-url/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -71,12 +71,41 @@ export const createReviewFlow = async ({ file, productId, rating, content }) => 
     throw new Error('영상 파일 업로드에 실패했습니다.')
   }
 
+  let thumbnailUrl = ''
+  if (thumbnailFile) {
+    const thumbPresignedResponse = await apiFetch(`${VIDEOS_API_URL}/thumbnail-presigned-url/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: thumbnailFile.name,
+        content_type: thumbnailFile.type,
+        file_size: thumbnailFile.size,
+      }),
+    })
+    const thumbPresigned = await parseResponse(
+      thumbPresignedResponse,
+      '썸네일 업로드 주소를 발급받지 못했습니다.',
+    )
+
+    const thumbUploadResponse = await fetch(thumbPresigned.presigned_url, {
+      method: 'PUT',
+      headers: { 'Content-Type': thumbnailFile.type },
+      body: thumbnailFile,
+    })
+
+    if (!thumbUploadResponse.ok) {
+      throw new Error('썸네일 파일 업로드에 실패했습니다.')
+    }
+
+    thumbnailUrl = thumbPresigned.thumbnail_url
+  }
+
   const completeResponse = await apiFetch(
     `${VIDEOS_API_URL}/${presigned.video_upload_id}/complete/`,
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ r2_key: presigned.r2_key }),
+      body: JSON.stringify({ r2_key: presigned.r2_key, thumbnail_url: thumbnailUrl }),
     },
   )
   await parseResponse(completeResponse, '영상 업로드 완료 처리에 실패했습니다.')

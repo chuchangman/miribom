@@ -438,6 +438,7 @@ const submitReview = async () => {
   try {
     await createReviewFlow({
       file: inputVideo.value,
+      thumbnailFile: thumbnailFile.value || null,
       productId: selectedProduct.value.id,
       rating: reviewRating.value,
       content: reviewContent.value.trim(),
