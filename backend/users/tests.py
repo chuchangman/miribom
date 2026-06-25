@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from products.models import Category, Product
-from videos.models import Video, VideoUpload
+from videos.models import Review, Video, VideoUpload
 from .models import EmailUser, User
 
 
@@ -62,6 +62,7 @@ class MeViewTests(APITestCase):
 class WithdrawalVideoCleanupTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create(nickname='owner', profile_image_url='', housing_type='apartment')
+        self.other = User.objects.create(nickname='other', profile_image_url='', housing_type='apartment')
         category = Category.objects.create(name='TV', slug='tv', ai_label='tv', display_order=1)
         product = Product.objects.create(
             category_id=category, product_id='p1', title='Test TV', image='', link=''
@@ -71,6 +72,17 @@ class WithdrawalVideoCleanupTests(APITestCase):
         )
         self.video = Video.objects.create(
             video_upload_id=video_upload, product_id=product, user_id=self.user
+        )
+        # other 유저 영상 (탈퇴 유저가 리뷰 작성 대상)
+        other_vu = VideoUpload.objects.create(
+            user_id=self.other, video_url='https://example.com/v2.mp4', thumbnail_url='', status='uploaded'
+        )
+        self.other_video = Video.objects.create(
+            video_upload_id=other_vu, product_id=product, user_id=self.other
+        )
+        # 탈퇴 유저가 other의 영상에 작성한 리뷰
+        self.review_on_other_video = Review.objects.create(
+            video_id=self.other_video, user_id=self.user, rating=5, content='좋아요'
         )
 
     def test_withdrawal_soft_deletes_users_videos(self):
@@ -82,20 +94,31 @@ class WithdrawalVideoCleanupTests(APITestCase):
         self.video.refresh_from_db()
         self.assertTrue(self.video.is_deleted)
 
-    def test_withdrawal_does_not_delete_other_users_videos(self):
-        other = User.objects.create(nickname='other', profile_image_url='', housing_type='apartment')
-        category = Category.objects.get(slug='tv')
-        product = Product.objects.get(product_id='p1')
-        vu = VideoUpload.objects.create(
-            user_id=other, video_url='https://example.com/v2.mp4', thumbnail_url='', status='uploaded'
-        )
-        other_video = Video.objects.create(video_upload_id=vu, product_id=product, user_id=other)
+    def test_withdrawal_soft_deletes_users_reviews(self):
+        self.client.force_authenticate(user=self.user)
 
+        self.client.delete('/api/auth/me/')
+
+        self.review_on_other_video.refresh_from_db()
+        self.assertTrue(self.review_on_other_video.is_deleted)
+
+    def test_withdrawal_does_not_delete_other_users_reviews(self):
+        other_review = Review.objects.create(
+            video_id=self.video, user_id=self.other, rating=3, content='보통'
+        )
+        self.client.force_authenticate(user=self.user)
+
+        self.client.delete('/api/auth/me/')
+
+        other_review.refresh_from_db()
+        self.assertFalse(other_review.is_deleted)
+
+    def test_withdrawal_does_not_delete_other_users_videos(self):
         self.client.force_authenticate(user=self.user)
         self.client.delete('/api/auth/me/')
 
-        other_video.refresh_from_db()
-        self.assertFalse(other_video.is_deleted)
+        self.other_video.refresh_from_db()
+        self.assertFalse(self.other_video.is_deleted)
 
     def test_withdrawal_removes_video_from_feed(self):
         self.client.force_authenticate(user=self.user)
@@ -104,4 +127,5 @@ class WithdrawalVideoCleanupTests(APITestCase):
         response = self.client.get('/api/videos/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        video_ids = [v['id'] for v in response.data]
+        self.assertNotIn(self.video.id, video_ids)
