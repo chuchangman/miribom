@@ -17,17 +17,23 @@
 
     <section class="summary-grid">
       <article class="summary-card">
-        <strong>{{ summaryStats.myVideos }}</strong>
+        <button type="button" class="summary-link" @click="goMyVideos">
+          {{ summaryStats.myVideos }}
+        </button>
         <p>내가 올린 영상</p>
       </article>
 
       <article class="summary-card">
-        <strong>{{ summaryStats.likedVideos }}</strong>
+        <button type="button" class="summary-link" @click="goLikedVideos">
+          {{ summaryStats.likedVideos }}
+        </button>
         <p>좋아요한 영상</p>
       </article>
 
       <article class="summary-card">
-        <strong>{{ summaryStats.bookmarks }}</strong>
+        <button type="button" class="summary-link" @click="goFavorites">
+          {{ summaryStats.bookmarks }}
+        </button>
         <p>즐겨찾기 제품</p>
       </article>
     </section>
@@ -46,7 +52,7 @@
     <section class="my-videos">
       <div class="section-header">
         <h2>내가 올린 영상</h2>
-        <button type="button" class="text-button">전체 보기</button>
+        <button type="button" class="text-button" @click="goMyVideos">전체 보기</button>
       </div>
 
       <p class="empty-message">아직 등록한 영상 후기가 없습니다.</p>
@@ -210,6 +216,18 @@ const goLivingProfile = () => {
   router.push({ name: 'LivingProfile', query: { mode: 'edit' } })
 }
 
+const goMyVideos = () => {
+  router.push({ name: 'MyVideos' })
+}
+
+const goLikedVideos = () => {
+  router.push({ name: 'Liked' })
+}
+
+const goFavorites = () => {
+  router.push({ name: 'Favorite' })
+}
+
 const resetPasswordForm = () => {
   passwordForm.currentPassword = ''
   passwordForm.newPassword = ''
@@ -353,10 +371,30 @@ onMounted(loadSummaryStats)
   padding: 20px;
 }
 
-.summary-card strong {
+.summary-link {
   display: block;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-family: inherit;
   font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
   margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.summary-link:hover,
+.summary-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.summary-link:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 4px;
+  border-radius: 6px;
 }
 
 .summary-card p {

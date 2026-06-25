@@ -30,7 +30,7 @@ test('video service loads the feed and reviews with cursor parameters', async ()
   }
 })
 
-test('video service calls like and comment APIs', async () => {
+test('video service calls like, review management, video delete, and comment APIs', async () => {
   const videoApi = await import('./videoApi.js')
   const originalFetch = globalThis.fetch
   const calls = []
@@ -53,27 +53,45 @@ test('video service calls like and comment APIs', async () => {
     }
 
     if (calls.length === 3) {
+      return new Response(JSON.stringify([{ id: 21, video_id: 9, rating: 5 }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (calls.length === 4) {
       return new Response(JSON.stringify({ liked: true, like_count: 3 }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    if (calls.length === 4) {
+    if (calls.length === 5) {
+      return new Response(JSON.stringify({ id: 21, video_id: 9, rating: 4, content: '수정 후기' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (calls.length === 6 || calls.length === 7) {
+      return new Response(null, { status: 204 })
+    }
+
+    if (calls.length === 8) {
       return new Response(JSON.stringify([{ id: 11, content: '댓글' }]), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    if (calls.length === 5) {
+    if (calls.length === 9) {
       return new Response(JSON.stringify({ id: 12, content: '새 댓글' }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    if (calls.length === 6) {
+    if (calls.length === 10) {
       return new Response(JSON.stringify({ id: 12, content: '수정 댓글' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -86,7 +104,14 @@ test('video service calls like and comment APIs', async () => {
   try {
     const likedVideos = await videoApi.fetchLikedVideos({ cursor: 7 })
     const myVideos = await videoApi.fetchMyVideos({ cursor: 6 })
+    const myReviews = await videoApi.fetchMyReviews({ cursor: 21 })
     const likeResult = await videoApi.toggleVideoLike(9)
+    const updatedReview = await videoApi.updateVideoReview(9, 21, {
+      rating: 4,
+      content: '수정 후기',
+    })
+    const deletedReview = await videoApi.deleteVideoReview(9, 21)
+    const deletedVideo = await videoApi.deleteVideo(9)
     const comments = await videoApi.fetchVideoComments(9, { cursor: 5 })
     const createdComment = await videoApi.createVideoComment(9, '새 댓글')
     const updatedComment = await videoApi.updateVideoComment(9, 12, '수정 댓글')
@@ -94,7 +119,11 @@ test('video service calls like and comment APIs', async () => {
 
     assert.equal(likedVideos[0].id, 9)
     assert.equal(myVideos[0].id, 9)
+    assert.equal(myReviews[0].id, 21)
     assert.equal(likeResult.liked, true)
+    assert.equal(updatedReview.content, '수정 후기')
+    assert.equal(deletedReview, null)
+    assert.equal(deletedVideo, null)
     assert.equal(comments[0].id, 11)
     assert.equal(createdComment.content, '새 댓글')
     assert.equal(updatedComment.content, '수정 댓글')
@@ -104,19 +133,27 @@ test('video service calls like and comment APIs', async () => {
       [
         'http://localhost:8000/api/videos/liked/?cursor=7',
         'http://localhost:8000/api/videos/my/?cursor=6',
+        'http://localhost:8000/api/videos/my-reviews/?cursor=21',
         'http://localhost:8000/api/videos/9/like/',
+        'http://localhost:8000/api/videos/9/reviews/21/',
+        'http://localhost:8000/api/videos/9/reviews/21/',
+        'http://localhost:8000/api/videos/9/',
         'http://localhost:8000/api/videos/9/comments/?cursor=5',
         'http://localhost:8000/api/videos/9/comments/',
         'http://localhost:8000/api/videos/9/comments/12/',
         'http://localhost:8000/api/videos/9/comments/12/',
       ],
     )
-    assert.equal(calls[2].options.method, 'POST')
-    assert.equal(calls[4].options.method, 'POST')
-    assert.equal(calls[4].options.body, JSON.stringify({ content: '새 댓글' }))
-    assert.equal(calls[5].options.method, 'PATCH')
-    assert.equal(calls[5].options.body, JSON.stringify({ content: '수정 댓글' }))
+    assert.equal(calls[3].options.method, 'POST')
+    assert.equal(calls[4].options.method, 'PATCH')
+    assert.equal(calls[4].options.body, JSON.stringify({ rating: 4, content: '수정 후기' }))
+    assert.equal(calls[5].options.method, 'DELETE')
     assert.equal(calls[6].options.method, 'DELETE')
+    assert.equal(calls[8].options.method, 'POST')
+    assert.equal(calls[8].options.body, JSON.stringify({ content: '새 댓글' }))
+    assert.equal(calls[9].options.method, 'PATCH')
+    assert.equal(calls[9].options.body, JSON.stringify({ content: '수정 댓글' }))
+    assert.equal(calls[10].options.method, 'DELETE')
   } finally {
     globalThis.fetch = originalFetch
   }
