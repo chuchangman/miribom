@@ -4,6 +4,7 @@ import LikedView from '@/views/LikedView.vue'
 import LivingProfileView from '@/views/LivingProfileView.vue'
 import LoginView from '@/views/LoginView.vue'
 import MyPageView from '@/views/MyPageView.vue'
+import MyVideosView from '@/views/MyVideosView.vue'
 import ProductDetailView from '@/views/ProductDetailView.vue'
 import ProductSearchView from '@/views/ProductSearchView.vue'
 import ProfileEditView from '@/views/ProfileEditView.vue'
@@ -27,6 +28,7 @@ const routes = [
   },
   { path: '/shorts', name: 'Shorts', component: ShortsView },
   { path: '/mypage', name: 'MyPage', component: MyPageView, meta: { requiresAuth: true } },
+  { path: '/my-videos', name: 'MyVideos', component: MyVideosView, meta: { requiresAuth: true } },
   {
     path: '/favorites',
     name: 'Favorite',

@@ -72,11 +72,49 @@ export const fetchMyVideos = async ({ cursor = null } = {}) => {
   return await parseResponse(response, '내가 올린 영상 목록을 불러오지 못했습니다.')
 }
 
+export const fetchMyReviews = async ({ cursor = null } = {}) => {
+  const params = new URLSearchParams()
+
+  if (cursor) {
+    params.set('cursor', cursor)
+  }
+
+  const queryString = params.toString()
+  const url = queryString
+    ? `${VIDEOS_API_URL}/my-reviews/?${queryString}`
+    : `${VIDEOS_API_URL}/my-reviews/`
+  const response = await apiFetch(url)
+  return await parseResponse(response, '내가 작성한 리뷰 목록을 불러오지 못했습니다.')
+}
+
 export const toggleVideoLike = async (videoId) => {
   const response = await apiFetch(`${VIDEOS_API_URL}/${videoId}/like/`, {
     method: 'POST',
   })
   return await parseResponse(response, '좋아요 상태를 변경하지 못했습니다.')
+}
+
+export const updateVideoReview = async (videoId, reviewId, { rating, content }) => {
+  const response = await apiFetch(`${VIDEOS_API_URL}/${videoId}/reviews/${reviewId}/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating, content }),
+  })
+  return await parseResponse(response, '리뷰를 수정하지 못했습니다.')
+}
+
+export const deleteVideoReview = async (videoId, reviewId) => {
+  const response = await apiFetch(`${VIDEOS_API_URL}/${videoId}/reviews/${reviewId}/`, {
+    method: 'DELETE',
+  })
+  return await parseResponse(response, '리뷰를 삭제하지 못했습니다.')
+}
+
+export const deleteVideo = async (videoId) => {
+  const response = await apiFetch(`${VIDEOS_API_URL}/${videoId}/`, {
+    method: 'DELETE',
+  })
+  return await parseResponse(response, '영상을 삭제하지 못했습니다.')
 }
 
 export const fetchVideoComments = async (videoId, { cursor = null } = {}) => {

@@ -162,7 +162,57 @@
                 {{ starRow }}
               </div>
             </div>
-            <p>{{ selectedReview.content }}</p>
+            <form
+              v-if="isReviewEditMode"
+              class="modal-review-edit-form"
+              @submit.prevent="handleUpdateSelectedReview"
+            >
+              <label>
+                평점
+                <select v-model.number="reviewEditForm.rating">
+                  <option v-for="score in ratingOptions" :key="score" :value="score">
+                    {{ score }}점
+                  </option>
+                </select>
+              </label>
+              <label>
+                후기 내용
+                <textarea
+                  v-model="reviewEditForm.content"
+                  maxlength="1000"
+                  rows="7"
+                  placeholder="실제 사용 경험을 적어주세요."
+                ></textarea>
+              </label>
+              <p v-if="reviewActionMessage" class="review-action-message">
+                {{ reviewActionMessage }}
+              </p>
+              <div class="modal-review-actions">
+                <button type="button" class="modal-outline-button" @click="cancelReviewEdit">
+                  취소
+                </button>
+                <button type="submit" class="modal-primary-button" :disabled="isSavingReview">
+                  {{ isSavingReview ? '저장 중...' : '저장' }}
+                </button>
+              </div>
+            </form>
+            <p v-else>{{ selectedReview.content }}</p>
+            <div v-if="canManageSelectedReview && !isReviewEditMode" class="modal-review-actions">
+              <button type="button" class="modal-outline-button" @click="startReviewEdit">
+                수정
+              </button>
+              <button
+                type="button"
+                class="modal-danger-button"
+                :disabled="isDeletingReview"
+                @click="handleDeleteSelectedReview"
+              >
+                {{ isDeletingReview ? '삭제 중...' : '삭제' }}
+              </button>
+            </div>
+            <p v-if="reviewActionMessage && !isReviewEditMode" class="review-action-message">
+              {{ reviewActionMessage }}
+            </p>
           </div>
         </div>
       </div>
@@ -171,29 +221,44 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createBookmark, deleteBookmark, fetchBookmarks } from '@/services/bookmarkApi.js'
 import { useAuth } from '@/composables/useAuth.js'
 import { fetchProductDetail } from '@/services/productApi.js'
-import { fetchVideoReviews, fetchVideos, toggleVideoLike } from '@/services/videoApi.js'
+import {
+  deleteVideoReview,
+  fetchVideoReviews,
+  fetchVideos,
+  toggleVideoLike,
+  updateVideoReview,
+} from '@/services/videoApi.js'
 
 const route = useRoute()
 const router = useRouter()
-const { isAuthInitialized, isLogin } = useAuth()
+const { isAuthInitialized, isLogin, user } = useAuth()
 const product = ref(null)
 const videos = ref([])
 const reviews = ref([])
 const selectedReview = ref(null)
+const isReviewEditMode = ref(false)
 const isLoading = ref(false)
 const isLoadingReviews = ref(false)
 const errorMessage = ref('')
 const reviewErrorMessage = ref('')
+const reviewActionMessage = ref('')
 const bookmarkId = ref(null)
 const isBookmarkPending = ref(false)
 const bookmarkErrorMessage = ref('')
 const likePendingVideoId = ref(null)
+const isSavingReview = ref(false)
+const isDeletingReview = ref(false)
 const starRow = '★★★★★'
+const ratingOptions = [5, 4, 3, 2, 1]
+const reviewEditForm = reactive({
+  rating: 5,
+  content: '',
+})
 
 const reviewCount = computed(() => reviews.value.length)
 const averageRating = computed(() => {
@@ -211,6 +276,13 @@ const averageStarWidth = computed(() => `${(averageRating.value / 5) * 100}%`)
 const reviewCountText = computed(() =>
   reviews.value.length === 0 ? '아직 리뷰가 없습니다.' : `총 ${reviews.value.length}개의 리뷰`,
 )
+const canManageSelectedReview = computed(() => {
+  if (!selectedReview.value || !user.value?.id) {
+    return false
+  }
+
+  return Number(selectedReview.value.user_id) === Number(user.value.id)
+})
 
 const getStarWidth = (rating) => `${(rating / 5) * 100}%`
 
@@ -368,12 +440,93 @@ const handleToggleLike = async (review) => {
 
 const openReviewModal = (review) => {
   selectedReview.value = review
+  isReviewEditMode.value = false
+  reviewActionMessage.value = ''
   document.body.style.overflow = 'hidden'
 }
 
 const closeReviewModal = () => {
   selectedReview.value = null
+  isReviewEditMode.value = false
+  reviewActionMessage.value = ''
   document.body.style.overflow = ''
+}
+
+const startReviewEdit = () => {
+  if (!canManageSelectedReview.value) {
+    return
+  }
+
+  reviewEditForm.rating = selectedReview.value.rating
+  reviewEditForm.content = selectedReview.value.content
+  reviewActionMessage.value = ''
+  isReviewEditMode.value = true
+}
+
+const cancelReviewEdit = () => {
+  isReviewEditMode.value = false
+  reviewActionMessage.value = ''
+}
+
+const handleUpdateSelectedReview = async () => {
+  if (!selectedReview.value || isSavingReview.value) {
+    return
+  }
+
+  const content = reviewEditForm.content.trim()
+  if (!content) {
+    reviewActionMessage.value = '후기 내용을 입력해주세요.'
+    return
+  }
+
+  isSavingReview.value = true
+  reviewActionMessage.value = ''
+
+  try {
+    const updatedReview = await updateVideoReview(
+      selectedReview.value.video_id,
+      selectedReview.value.id,
+      {
+        rating: reviewEditForm.rating,
+        content,
+      },
+    )
+    Object.assign(selectedReview.value, {
+      rating: updatedReview.rating,
+      content: updatedReview.content,
+    })
+    isReviewEditMode.value = false
+  } catch (error) {
+    reviewActionMessage.value = error.message || '리뷰를 수정하지 못했습니다.'
+  } finally {
+    isSavingReview.value = false
+  }
+}
+
+const handleDeleteSelectedReview = async () => {
+  if (!selectedReview.value || isDeletingReview.value) {
+    return
+  }
+
+  const isConfirmed = window.confirm('이 리뷰를 삭제할까요? 삭제한 리뷰는 되돌릴 수 없습니다.')
+  if (!isConfirmed) {
+    return
+  }
+
+  const reviewId = selectedReview.value.id
+  const videoId = selectedReview.value.video_id
+  isDeletingReview.value = true
+  reviewActionMessage.value = ''
+
+  try {
+    await deleteVideoReview(videoId, reviewId)
+    reviews.value = reviews.value.filter((review) => review.id !== reviewId)
+    closeReviewModal()
+  } catch (error) {
+    reviewActionMessage.value = error.message || '리뷰를 삭제하지 못했습니다.'
+  } finally {
+    isDeletingReview.value = false
+  }
 }
 
 const handleKeydown = (event) => {
@@ -820,6 +973,79 @@ onBeforeUnmount(() => {
 
 .review-modal__summary p {
   line-height: 1.7;
+}
+
+.modal-review-edit-form {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-review-edit-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.modal-review-edit-form select,
+.modal-review-edit-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background-color: #fff;
+  padding: 11px 12px;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.modal-review-edit-form textarea {
+  resize: vertical;
+}
+
+.modal-review-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modal-primary-button,
+.modal-outline-button,
+.modal-danger-button {
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modal-primary-button {
+  border: 1px solid var(--color-primary-600);
+  background: var(--color-primary-600);
+  color: #fff;
+}
+
+.modal-outline-button {
+  border: 1px solid #93c5fd;
+  background: #fff;
+  color: var(--color-primary-600);
+}
+
+.modal-danger-button {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.modal-primary-button:disabled,
+.modal-outline-button:disabled,
+.modal-danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.review-action-message {
+  color: var(--color-danger);
+  font-weight: 700;
 }
 
 @media (max-width: 980px) {
