@@ -23,6 +23,7 @@ from .serializers import (
     CommentUpdateSerializer,
     CommentDetailSerializer,
     ReviewCreateSerializer,
+    ReviewUpdateSerializer,
     ReviewDetailSerializer,
 )
 
@@ -429,6 +430,29 @@ class ReviewListCreateView(APIView):
 class ReviewDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return super().get_permissions()
+
+    def get_object(self, video_id, review_id, user):
+        try:
+            Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return None, Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            review = Review.objects.select_related(
+                'user_id', 'video_id__product_id'
+            ).get(id=review_id, video_id=video_id, is_deleted=False)
+        except Review.DoesNotExist:
+            return None, Response({'detail': '리뷰를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if review.user_id != user:
+            return None, Response({'detail': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        return review, None
+
     @extend_schema(
         summary='리뷰 상세 조회',
         responses={
@@ -451,6 +475,74 @@ class ReviewDetailView(APIView):
 
         serializer = ReviewDetailSerializer(review)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='리뷰 수정 (평점, 내용)',
+        request=ReviewUpdateSerializer,
+        responses={
+            200: ReviewDetailSerializer,
+            400: {'description': '유효하지 않은 요청'},
+            403: {'description': '권한 없음'},
+            404: {'description': '리뷰 또는 영상 없음'},
+        },
+    )
+    def patch(self, request, video_id, review_id):
+        review, error = self.get_object(video_id, review_id, request.user)
+        if error:
+            return error
+
+        serializer = ReviewUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        review.rating = serializer.validated_data['rating']
+        review.content = serializer.validated_data['content']
+        review.save(update_fields=['rating', 'content'])
+
+        response_serializer = ReviewDetailSerializer(review)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='리뷰 삭제',
+        responses={
+            204: None,
+            403: {'description': '권한 없음'},
+            404: {'description': '리뷰 또는 영상 없음'},
+        },
+    )
+    def delete(self, request, video_id, review_id):
+        review, error = self.get_object(video_id, review_id, request.user)
+        if error:
+            return error
+
+        review.is_deleted = True
+        review.save(update_fields=['is_deleted'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class VideoDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='숏폼 삭제',
+        responses={
+            204: None,
+            403: {'description': '권한 없음'},
+            404: {'description': '영상 없음'},
+        },
+    )
+    def delete(self, request, video_id):
+        try:
+            video = Video.objects.get(id=video_id, is_deleted=False)
+        except Video.DoesNotExist:
+            return Response({'detail': '영상을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if video.user_id != request.user:
+            return Response({'detail': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        video.is_deleted = True
+        video.save(update_fields=['is_deleted'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LikeToggleView(APIView):

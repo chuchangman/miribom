@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    VideoPresignedUrlView, ThumbnailPresignedUrlView, VideoUploadCompleteView, VideoView,
+    VideoPresignedUrlView, ThumbnailPresignedUrlView, VideoUploadCompleteView, VideoView, VideoDetailView,
     CommentListCreateView, CommentDetailView,
     ReviewListCreateView, ReviewDetailView,
     LikeToggleView, LikedVideoListView,
@@ -15,6 +15,7 @@ urlpatterns = [
     path('presigned-url/', VideoPresignedUrlView.as_view(), name='video-presigned-url'),
     path('thumbnail-presigned-url/', ThumbnailPresignedUrlView.as_view(), name='thumbnail-presigned-url'),
     path('<int:video_upload_id>/complete/', VideoUploadCompleteView.as_view(), name='video-upload-complete'),
+    path('<int:video_id>/', VideoDetailView.as_view(), name='video-detail'),
     path('<int:video_id>/like/', LikeToggleView.as_view(), name='video-like-toggle'),
     path('<int:video_id>/comments/', CommentListCreateView.as_view(), name='comment-list-create'),
     path('<int:video_id>/comments/<int:comment_id>/', CommentDetailView.as_view(), name='comment-detail'),

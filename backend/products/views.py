@@ -310,6 +310,7 @@ BUDGET_MIN_MAP = {
     'over_300':   3_000_000,
 }
 
+
 BUDGET_MAX_MAP = {
     'under_30':   300_000,
     '30_to_100':  1_000_000,

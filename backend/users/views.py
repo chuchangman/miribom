@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 from .models import User, SocialUser, EmailUser
+from videos.models import Video, Review
 from .serializers import SignupSerializer, LoginSerializer, ProfileUpdateSerializer, PasswordChangeSerializer, LivingUpdateSerializer
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
@@ -212,6 +213,8 @@ class MeView(APIView):
         user = request.user
         user.is_deleted = True
         user.save(update_fields=['is_deleted'])
+        Video.objects.filter(user_id=user, is_deleted=False).update(is_deleted=True)
+        Review.objects.filter(user_id=user, is_deleted=False).update(is_deleted=True)
         response = Response(status=status.HTTP_204_NO_CONTENT)
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')

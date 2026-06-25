@@ -56,6 +56,11 @@ class ReviewCreateSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=1000)
 
 
+class ReviewUpdateSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    content = serializers.CharField(max_length=1000)
+
+
 class ReviewDetailSerializer(serializers.ModelSerializer):
     user_nickname = serializers.CharField(source='user_id.nickname')
     product_id = serializers.IntegerField(source='video_id.product_id.id')
