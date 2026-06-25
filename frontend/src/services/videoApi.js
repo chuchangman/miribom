@@ -57,6 +57,21 @@ export const fetchLikedVideos = async ({ cursor = null } = {}) => {
   return await parseResponse(response, '좋아요한 영상 목록을 불러오지 못했습니다.')
 }
 
+export const fetchMyVideos = async ({ cursor = null } = {}) => {
+  const params = new URLSearchParams()
+
+  if (cursor) {
+    params.set('cursor', cursor)
+  }
+
+  const queryString = params.toString()
+  const url = queryString
+    ? `${VIDEOS_API_URL}/my/?${queryString}`
+    : `${VIDEOS_API_URL}/my/`
+  const response = await apiFetch(url)
+  return await parseResponse(response, '내가 올린 영상 목록을 불러오지 못했습니다.')
+}
+
 export const toggleVideoLike = async (videoId) => {
   const response = await apiFetch(`${VIDEOS_API_URL}/${videoId}/like/`, {
     method: 'POST',
