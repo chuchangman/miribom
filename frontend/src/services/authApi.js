@@ -2,7 +2,8 @@ import { AUTH_API_URL, apiFetch } from '../config/api.js'
 
 const parseResponse = async (response, fallbackMessage) => {
   if (response.ok) {
-    return await response.json()
+    const text = await response.text()
+    return text ? JSON.parse(text) : null
   }
 
   let message = fallbackMessage
@@ -15,6 +16,19 @@ const parseResponse = async (response, fallbackMessage) => {
   }
 
   throw new Error(message)
+}
+
+export const changeMyPassword = async ({ currentPassword, newPassword }) => {
+  const response = await apiFetch(`${AUTH_API_URL}/me/password/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  })
+
+  return await parseResponse(response, '비밀번호를 변경하지 못했습니다.')
 }
 
 export const updateMyProfile = async ({ nickname }) => {
